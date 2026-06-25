@@ -1683,6 +1683,25 @@ function saveClose(){
   if (t.outcome !== 'WIN') t.maxR = t.rr;
   var ct = document.getElementById('cl-time').value;
   if (ct){ t.closeTime = ct; if (!t.closeDate) t.closeDate = t.date; }
+  // Map filter-submitted SL into the logger's standard fields and auto-set TP to 3R.
+  // The filter writes slPoints (+entry, plannedRR:3) but not slSize/tpSize — derive them
+  // so SL/TP price, planned RR and rrGap populate from the filter's stop.
+  if ((t.slSize == null) && t.slPoints != null && t.slPoints > 0){
+    t.slSize = parseFloat(t.slPoints);
+  }
+  if ((t.tpSize == null) && t.slSize != null){
+    t.tpSize = +(t.slSize * 3).toFixed(1);   // TP always 3R
+  }
+  if (t.plannedRR == null) t.plannedRR = 3;
+  if (t.entry != null && t.slSize != null && t.slPrice == null){
+    t.slPrice = +(t.entry - t.slSize).toFixed(1);
+  }
+  if (t.entry != null && t.tpSize != null && t.tpPrice == null){
+    t.tpPrice = +(t.entry + t.tpSize).toFixed(1);
+  }
+  if (t.rr != null && t.plannedRR != null && t.rrGap == null){
+    t.rrGap = +(t.rr - t.plannedRR).toFixed(2);
+  }
   // No longer open
   t.status = 'closed';
   save(); renderTrades(); closeCloseModal(); toast('Trade closed ✓');
