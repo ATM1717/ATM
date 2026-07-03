@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATM">
+<meta name="theme-color" content="#070A0F">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23070A0F'/%3E%3Ctext x='90' y='110' font-family='Arial' font-size='56' font-weight='700' fill='%235AC8FA' text-anchor='middle'%3EATM%3C/text%3E%3C/svg%3E">
+<title>ATM</title>
+<style>
+:root{
+  --bg:#070A0F;--surf:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.09);
+  --teal:#5AC8FA;--green:#30D158;--gold:#FFD60A;
+  --text:#F2F2F7;--muted:rgba(242,242,247,0.45);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,Arial,sans-serif;overflow:hidden}
+
+/* ── Launcher ─────────────────────────────────────────────── */
+#launcher{position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:24px;
+  padding-top:calc(env(safe-area-inset-top) + 24px);
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(90,200,250,0.09), transparent 60%),
+    var(--bg)}
+.l-in{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;
+  opacity:0;transform:translateY(10px);animation:lin .5s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes lin{to{opacity:1;transform:none}}
+
+.l-over{font-size:10px;font-weight:600;letter-spacing:.34em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:14px}
+.l-title{font-size:52px;font-weight:800;letter-spacing:.06em;line-height:1;
+  background:linear-gradient(180deg,#EAF7FF 0%, var(--teal) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.l-rule{width:44px;height:2px;border-radius:2px;background:rgba(90,200,250,0.45);margin:18px 0 12px}
+.l-sub{font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
+.l-sub2{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.02em}
+
+.l-data{display:flex;gap:22px;margin:26px 0 30px;padding:11px 20px;
+  background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:12px}
+.l-dcell{text-align:center}
+.l-dnum{font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.l-dlbl{font-size:8.5px;font-weight:600;letter-spacing:.12em;color:var(--muted);
+  text-transform:uppercase;margin-top:2px}
+
+.l-card{width:100%;background:var(--surf);border:1px solid var(--border);
+  border-radius:16px;padding:18px;margin-bottom:12px;cursor:pointer;
+  display:flex;align-items:center;gap:15px;transition:transform .1s,border-color .2s,background .2s}
+.l-card:active{transform:scale(.985);background:rgba(255,255,255,0.09)}
+.l-card.logger{border-color:rgba(48,209,88,0.28)}
+.l-card.filter{border-color:rgba(90,200,250,0.28)}
+.l-icon{width:44px;height:44px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.l-card.logger .l-icon{background:rgba(48,209,88,0.12)}
+.l-card.filter .l-icon{background:rgba(90,200,250,0.12)}
+.l-icon svg{width:21px;height:21px}
+.l-body{flex:1;min-width:0}
+.l-name{font-size:16px;font-weight:700;letter-spacing:.01em}
+.l-card.logger .l-name{color:var(--green)}
+.l-card.filter .l-name{color:var(--teal)}
+.l-desc{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.l-chev{color:rgba(255,255,255,0.22);font-size:18px;font-weight:600;flex-shrink:0}
+
+.l-foot{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);
+  font-size:9px;color:rgba(255,255,255,0.18);text-align:center;line-height:1.7}
+
+/* ── App bar ──────────────────────────────────────────────── */
+#appbar{position:fixed;top:0;left:0;right:0;z-index:50;display:none;
+  background:rgba(7,10,15,0.97);border-bottom:1px solid var(--border);
+  padding-top:env(safe-area-inset-top)}
+.bar-inner{display:flex;align-items:center;height:42px;padding:0 8px;gap:6px}
+.bar-btn{padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;background:var(--surf);border:1px solid var(--border)}
+.bar-btn:active{opacity:.7}
+.bar-title{flex:1;text-align:center;font-size:13px;font-weight:700}
+.bar-title.logger{color:var(--green)}
+.bar-title.filter{color:var(--teal)}
+
+/* ── Frames ───────────────────────────────────────────────── */
+.frame{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;display:none;
+  top:calc(env(safe-area-inset-top) + 42px);height:calc(100% - env(safe-area-inset-top) - 42px);
+  background:var(--bg)}
+.frame.active{display:block}
+</style>
+</head>
+<body>
+
+<!-- LAUNCHER -->
+<div id="launcher">
+  <div class="l-in">
+    <div class="l-over">ATM Trading Systems</div>
+    <div class="l-title">ATM</div>
+    <div class="l-rule"></div>
+    <div class="l-sub">Automated Trade Model</div>
+    <div class="l-sub2">Evidence-driven execution &middot; NAS100</div>
+
+    <div class="l-data" id="l-data">
+      <div class="l-dcell"><div class="l-dnum" id="ld-total">&mdash;</div><div class="l-dlbl">Trades</div></div>
+      <div class="l-dcell"><div class="l-dnum" id="ld-live">&mdash;</div><div class="l-dlbl">Live</div></div>
+      <div class="l-dcell"><div class="l-dnum" id="ld-bt">&mdash;</div><div class="l-dlbl">Backtest</div></div>
+    </div>
+
+    <div class="l-card logger" onclick="openApp('logger')">
+      <div class="l-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></div>
+      <div class="l-body">
+        <div class="l-name">Trade Log</div>
+        <div class="l-desc">Record, tag and manage every trade &middot; import &amp; export the dataset</div>
+      </div>
+      <div class="l-chev">&#8250;</div>
+    </div>
+
+    <div class="l-card filter" onclick="openApp('filter')">
+      <div class="l-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5AC8FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div>
+      <div class="l-body">
+        <div class="l-name">Trade Filter</div>
+        <div class="l-desc">Lower-bound EV verdicts &middot; combos &middot; edge &amp; trend analytics</div>
+      </div>
+      <div class="l-chev">&#8250;</div>
+    </div>
+  </div>
+
+  <div class="l-foot">&copy; ATM Trading Systems &middot; All rights reserved</div>
+</div>
+
+<!-- APP BAR -->
+<div id="appbar">
+  <div class="bar-inner">
+    <div class="bar-btn" onclick="goHome()">&#8962; Home</div>
+    <div class="bar-title" id="bar-title"></div>
+    <div class="bar-btn" id="bar-switch" onclick="switchApp()"></div>
+  </div>
+</div>
+
+<!-- FRAMES (lazy loaded, kept alive) -->
+<iframe class="frame" id="frame-logger" data-src="ATM_Log.html"></iframe>
+<iframe class="frame" id="frame-filter" data-src="ATM_Filter.html"></iframe>
+
+<script>
+var current = null;        // 'logger' | 'filter' | null
+var loggerUsed = false;    // logger viewed since filter last loaded
+
+// Dataset strip — factual state of the evolving dataset, no thresholds.
+function refreshDataStrip(){
+  try {
+    var t = JSON.parse(localStorage.getItem('atm_trades')||'[]');
+    var closed = t.filter(function(x){ return x.outcome && x.status!=='open'; });
+    var live = closed.filter(function(x){ return x.source!=='backtest'; }).length;
+    var bt = closed.length - live;
+    document.getElementById('ld-total').textContent = closed.length || '\u2014';
+    document.getElementById('ld-live').textContent = live || '\u2014';
+    document.getElementById('ld-bt').textContent = bt || '\u2014';
+  } catch(e){}
+}
+refreshDataStrip();
+
+function loadFrame(name) {
+  var f = document.getElementById('frame-' + name);
+  if (!f.src) f.src = f.getAttribute('data-src');
+  return f;
+}
+
+function openApp(name) {
+  var launcher = document.getElementById('launcher');
+  var appbar   = document.getElementById('appbar');
+  var title    = document.getElementById('bar-title');
+  var sw       = document.getElementById('bar-switch');
+
+  // Filter must re-read localStorage if the logger was used since its last load
+  var f = loadFrame(name);
+  if (name === 'filter' && loggerUsed && f.src) {
+    try { f.contentWindow.location.reload(); } catch(e) { f.src = f.getAttribute('data-src'); }
+    loggerUsed = false;
+  }
+  if (name === 'logger') loggerUsed = true;
+
+  document.querySelectorAll('.frame').forEach(function(fr){ fr.classList.remove('active'); });
+  f.classList.add('active');
+
+  launcher.style.display = 'none';
+  appbar.style.display = 'block';
+  title.textContent = name === 'logger' ? 'Trade Log' : 'Trade Filter';
+  title.className = 'bar-title ' + name;
+  sw.textContent = name === 'logger' ? 'Filter \u2192' : 'Log \u2192';
+  current = name;
+}
+
+function switchApp() {
+  openApp(current === 'logger' ? 'filter' : 'logger');
+}
+
+function goHome() {
+  document.querySelectorAll('.frame').forEach(function(fr){ fr.classList.remove('active'); });
+  document.getElementById('appbar').style.display = 'none';
+  document.getElementById('launcher').style.display = 'flex';
+  refreshDataStrip();
+  current = null;
+}
+</script>
+</body>
+</html>
