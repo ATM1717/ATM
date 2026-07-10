@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATM">
+<meta name="theme-color" content="#070A0F">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23070A0F'/%3E%3Ctext x='90' y='110' font-family='Arial' font-size='56' font-weight='700' fill='%235AC8FA' text-anchor='middle'%3EATM%3C/text%3E%3C/svg%3E">
+<title>ATM</title>
+<style>
+:root{
+  --bg:#070A0F;--surf:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.09);
+  --teal:#5AC8FA;--green:#30D158;--gold:#FFD60A;
+  --text:#F2F2F7;--muted:rgba(242,242,247,0.45);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,Arial,sans-serif;overflow:hidden}
+
+/* ── Launcher ─────────────────────────────────────────────── */
+#launcher{position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:24px;
+  padding-top:calc(env(safe-area-inset-top) + 24px)}
+.l-title{font-size:42px;font-weight:800;color:var(--teal);letter-spacing:.04em}
+.l-sub{font-size:12px;color:var(--muted);margin:6px 0 40px;text-align:center}
+.l-card{width:100%;max-width:340px;background:var(--surf);border:1px solid var(--border);
+  border-radius:18px;padding:22px 20px;margin-bottom:14px;cursor:pointer;
+  display:flex;align-items:center;gap:16px;transition:transform .1s,border-color .2s}
+.l-card:active{transform:scale(.98)}
+.l-card.logger{border-color:rgba(48,209,88,0.3)}
+.l-card.filter{border-color:rgba(90,200,250,0.3)}
+.l-icon{font-size:30px;width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.l-card.logger .l-icon{background:rgba(48,209,88,0.12)}
+.l-card.filter .l-icon{background:rgba(90,200,250,0.12)}
+.l-name{font-size:17px;font-weight:700}
+.l-card.logger .l-name{color:var(--green)}
+.l-card.filter .l-name{color:var(--teal)}
+.l-card.tracker{border-color:rgba(255,176,32,0.3)}
+.l-card.tracker .l-icon{background:rgba(255,176,32,0.12)}
+.l-card.tracker .l-name{color:#FFB020}
+.tracker{color:#FFB020}
+.l-desc{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.l-foot{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);
+  font-size:9px;color:rgba(255,255,255,0.18);text-align:center;line-height:1.7}
+
+/* ── App bar ──────────────────────────────────────────────── */
+#appbar{position:fixed;top:0;left:0;right:0;z-index:50;display:none;
+  background:rgba(7,10,15,0.97);border-bottom:1px solid var(--border);
+  padding-top:env(safe-area-inset-top)}
+.bar-inner{display:flex;align-items:center;height:42px;padding:0 8px;gap:6px}
+.bar-btn{padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;background:var(--surf);border:1px solid var(--border)}
+.bar-btn:active{opacity:.7}
+.bar-title{flex:1;text-align:center;font-size:13px;font-weight:700}
+.bar-title.logger{color:var(--green)}
+.bar-title.filter{color:var(--teal)}
+
+/* ── Frames ───────────────────────────────────────────────── */
+.frame{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;display:none;
+  top:calc(env(safe-area-inset-top) + 42px);height:calc(100% - env(safe-area-inset-top) - 42px);
+  background:var(--bg)}
+.frame.active{display:block}
+</style>
+</head>
+<body>
+
+<!-- LAUNCHER -->
+<div id="launcher">
+  <div class="l-title">ATM</div>
+  <div class="l-sub">Building a statistically proven edge</div>
+
+  <div class="l-card logger" onclick="openApp('logger')">
+    <div class="l-icon">&#128203;</div>
+    <div>
+      <div class="l-name">Trade Logger</div>
+      <div class="l-desc">Log, tag and manage every trade &middot; import &amp; export data</div>
+    </div>
+  </div>
+
+  <div class="l-card filter" onclick="openApp('filter')">
+    <div class="l-icon">&#128202;</div>
+    <div>
+      <div class="l-name">Trade Filter</div>
+      <div class="l-desc">Verdicts &middot; combos &middot; stats &middot; decision guide</div>
+    </div>
+  </div>
+
+  <div class="l-card tracker" onclick="openApp('tracker')">
+    <div class="l-icon">&#128188;</div>
+    <div>
+      <div class="l-name">Tracker</div>
+      <div class="l-desc">Business &amp; prop position &middot; rotation &middot; capital &middot; export</div>
+    </div>
+  </div>
+
+  <div class="l-foot">&copy; ATM Trading Systems &middot; All rights reserved</div>
+</div>
+
+<!-- APP BAR -->
+<div id="appbar">
+  <div class="bar-inner">
+    <div class="bar-btn" onclick="goHome()">&#8962; Home</div>
+    <div class="bar-title" id="bar-title"></div>
+    <div class="bar-btn" id="bar-switch" onclick="switchApp()"></div>
+  </div>
+</div>
+
+<!-- FRAMES (lazy loaded, kept alive) -->
+<iframe class="frame" id="frame-logger" data-src="ATM_Log.html"></iframe>
+<iframe class="frame" id="frame-filter" data-src="ATM_Filter.html"></iframe>
+<iframe class="frame" id="frame-tracker" data-src="ATM_Tracker.html"></iframe>
+
+<script>
+var current = null;        // 'logger' | 'filter' | null
+var loggerUsed = false;    // logger viewed since filter last loaded
+
+function loadFrame(name) {
+  var f = document.getElementById('frame-' + name);
+  if (!f.src) f.src = f.getAttribute('data-src');
+  return f;
+}
+
+function openApp(name) {
+  var launcher = document.getElementById('launcher');
+  var appbar   = document.getElementById('appbar');
+  var title    = document.getElementById('bar-title');
+  var sw       = document.getElementById('bar-switch');
+
+  // Filter must re-read localStorage if the logger was used since its last load
+  var f = loadFrame(name);
+  if (name === 'filter' && loggerUsed && f.src) {
+    try { f.contentWindow.location.reload(); } catch(e) { f.src = f.getAttribute('data-src'); }
+    loggerUsed = false;
+  }
+  if (name === 'logger') loggerUsed = true;
+
+  document.querySelectorAll('.frame').forEach(function(fr){ fr.classList.remove('active'); });
+  f.classList.add('active');
+
+  launcher.style.display = 'none';
+  appbar.style.display = 'block';
+  title.textContent = name === 'logger' ? 'Trade Logger' : name === 'filter' ? 'Trade Filter' : 'Tracker';
+  title.className = 'bar-title ' + name;
+  var nxt = name === 'logger' ? 'Filter' : name === 'filter' ? 'Tracker' : 'Logger';
+  sw.textContent = nxt + ' \u2192';
+  current = name;
+}
+
+function switchApp() {
+  openApp(current === 'logger' ? 'filter' : current === 'filter' ? 'tracker' : 'logger');
+}
+
+function goHome() {
+  document.querySelectorAll('.frame').forEach(function(fr){ fr.classList.remove('active'); });
+  document.getElementById('appbar').style.display = 'none';
+  document.getElementById('launcher').style.display = 'flex';
+  current = null;
+}
+</script>
+</body>
+</html>
