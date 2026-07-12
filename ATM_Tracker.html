@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070A0F">
+<title>ATM Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#070A0F;--surf:rgba(255,255,255,0.055);--surf2:rgba(255,255,255,0.09);--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.14);
+--amber:#FFB020;--amber-hi:#FFD98A;--green:#30D158;--red:#FF453A;--teal:#5AC8FA;--text:#F2F2F7;--muted:rgba(242,242,247,0.5);--faint:rgba(242,242,247,0.32)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding-bottom:92px;min-height:100vh;background:radial-gradient(ellipse 90% 40% at 50% -8%,rgba(255,176,32,0.07) 0%,transparent 60%),var(--bg)}
+.hdr{padding:calc(env(safe-area-inset-top) + 16px) 20px 12px;text-align:center}
+.hdr-over{font-size:8.5px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:var(--faint)}
+.hdr-title{font-size:28px;font-weight:800;letter-spacing:.04em;line-height:1;margin-top:4px;background:linear-gradient(180deg,var(--amber-hi),var(--amber));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;background:rgba(9,12,17,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;padding:9px 2px 8px;text-align:center;cursor:pointer;color:var(--faint)}
+.tab.active{color:var(--amber)}
+.tab-ico{font-size:16px;line-height:1;display:block;margin-bottom:3px}
+.tab-lbl{font-size:8.5px;font-weight:600}
+.page{display:none;padding:2px 15px 20px;animation:fade .22s ease}.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.lead{font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:15px 4px 8px}
+.lead:first-child{margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:11px 12px}
+.stat-lbl{font-size:8.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;line-height:1.3}
+.stat-val{font-size:18px;font-weight:750;line-height:1.05}
+.stat-sub{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.35}
+.pos{color:var(--green)}.neg{color:var(--red)}.amb{color:var(--amber)}.tealc{color:var(--teal)}
+.tbl{background:var(--surf);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+.trow{display:flex;align-items:center;padding:8px 11px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11.5px}
+.trow:last-child{border-bottom:none}
+.trow.head{background:rgba(255,255,255,0.03);font-size:8px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.tc{flex:1;text-align:center;font-weight:650}.tc.l{text-align:left;flex:1.2;font-weight:600;color:var(--muted)}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:11px 12px;margin-bottom:8px}
+.c-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.c-id{font-size:13px;font-weight:700}
+.c-size{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(255,176,32,0.12);color:var(--amber)}
+.c-meta{display:flex;flex-wrap:wrap;gap:4px 11px;font-size:10px;color:var(--muted)}
+.c-meta b{color:var(--text)}
+.badge{display:inline-block;font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:6px}
+.b-active{background:rgba(90,200,250,0.14);color:var(--teal)}.b-funded{background:rgba(48,209,88,0.14);color:var(--green)}
+.b-passed{background:rgba(48,209,88,0.12);color:var(--green)}.b-failed,.b-breached{background:rgba(255,69,58,0.12);color:var(--red)}
+.b-next{background:rgba(255,176,32,0.18);color:var(--amber)}
+.acts{display:flex;gap:7px;margin-top:8px}
+.mini{flex:1;padding:7px;border-radius:9px;background:var(--surf2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);text-align:center;cursor:pointer}
+.mini.pri{background:rgba(255,176,32,0.15);border-color:var(--amber);color:var(--amber)}
+.mini.del{color:var(--red);border-color:rgba(255,69,58,0.25)}
+.fab{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 74px);z-index:55;width:50px;height:50px;border-radius:15px;background:linear-gradient(160deg,var(--amber),#E8940C);color:#1a1200;font-size:27px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(255,176,32,0.35);cursor:pointer;border:none}
+.modal-bg{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#0E1319;border:1px solid var(--border2);border-radius:18px 18px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)}
+.m-h{font-size:15px;font-weight:750;margin-bottom:14px}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 11px;color:var(--text);font-size:14px;font-family:inherit;-webkit-appearance:none}
+.field input:focus,.field select:focus{outline:none;border-color:var(--amber)}
+.frow{display:flex;gap:9px}.frow .field{flex:1}
+.seg{display:flex;gap:5px;flex-wrap:wrap}
+.seg-opt{flex:1;min-width:56px;text-align:center;padding:8px 3px;border-radius:9px;background:var(--surf);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg-opt.sel{background:rgba(255,176,32,0.14);border-color:var(--amber);color:var(--amber)}
+.m-acts{display:flex;gap:9px;margin-top:15px}
+.btn{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:inherit}
+.btn-save{background:linear-gradient(160deg,var(--amber),#E8940C);color:#1a1200}
+.btn-cancel{background:var(--surf2);color:var(--muted);border:1px solid var(--border)}
+.empty{text-align:center;padding:34px 18px;color:var(--faint);font-size:12.5px}
+.chips{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto}
+.chip{white-space:nowrap;padding:6px 11px;border-radius:8px;background:var(--surf);border:1px solid var(--border);font-size:10.5px;font-weight:600;color:var(--muted);cursor:pointer}
+.chip.on{background:rgba(255,176,32,0.14);border-color:var(--amber);color:var(--amber)}
+.note{font-size:9.5px;color:var(--faint);margin:7px 4px 0;line-height:1.5}
+.next-hero{background:linear-gradient(160deg,rgba(255,176,32,0.13),rgba(255,176,32,0.05));border:1px solid rgba(255,176,32,0.3);border-radius:15px;padding:14px;margin-bottom:10px}
+.nh-lbl{font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+.nh-id{font-size:21px;font-weight:800}
+.nh-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.rot-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px}
+.rot-row:last-child{border-bottom:none}
+.rot-rank{width:20px;text-align:center;font-weight:800;color:var(--faint);font-size:11px}
+.rot-id{flex:1;font-weight:700}
+.rot-sub{font-size:9.5px;color:var(--muted);font-weight:500;display:block}
+.tick{color:var(--green);font-weight:800}
+.exp-btn{width:100%;padding:13px;border-radius:12px;background:linear-gradient(160deg,var(--amber),#E8940C);color:#1a1200;font-size:14px;font-weight:750;border:none;font-family:inherit;cursor:pointer;margin-top:6px}
+.inline-input{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:7px 9px;color:var(--text);font-size:12.5px;width:110px;text-align:right;font-family:inherit}
+.sess-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sess-chip{padding:8px 12px;border-radius:9px;background:var(--surf);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+.sess-chip.on{background:rgba(255,176,32,0.16);border-color:var(--amber);color:var(--amber)}
+.calcish{width:100%;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 11px;color:var(--text);font-size:14px;font-family:inherit;-webkit-appearance:none}
+.verdict-box{margin:4px 0 4px;display:flex;flex-direction:column;gap:8px}
+.vd-line{background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border:1px solid var(--border);
+  border-left:3px solid var(--amber);border-radius:11px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--text)}
+.vd-line.good{border-left-color:var(--green)}
+.vd-line.warn{border-left-color:var(--amber)}
+.vd-line.bad{border-left-color:var(--red)}
+.vd-line b{font-weight:700}
+.vd-ico{font-weight:700;margin-right:6px}
+.chart-card{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:12px 12px 8px;margin-bottom:10px}
+.chart-title{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text);margin-bottom:2px}
+.chart-sub{font-size:9.5px;color:var(--faint);margin-bottom:8px}
+.chart-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:10px;color:var(--muted)}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+.chart-empty{font-size:11px;color:var(--faint);padding:20px 0;text-align:center}
+.dsum{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
+.dacct{font-size:11px;color:var(--muted);background:var(--surf2,rgba(255,255,255,0.04));border:1px solid var(--border);border-radius:7px;padding:3px 8px}
+.dacct b{color:var(--text)}
+.tbreak{margin:8px 0 2px;display:flex;flex-direction:column;gap:3px}
+.trow-day{display:grid;grid-template-columns:30px 1fr auto auto auto auto auto;align-items:center;gap:6px;font-size:11.5px;padding:4px 8px;background:rgba(255,255,255,0.02);border-radius:6px}
+.tseq{font-weight:700;color:var(--amber);font-size:10.5px}
+.tacct{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tout{font-weight:600;font-size:10.5px}
+.trr{color:var(--muted);font-size:10.5px;text-align:right;min-width:32px}
+.tmult{font-size:9.5px;font-weight:700;color:#0A84FF;background:rgba(10,132,255,0.14);border-radius:4px;padding:1px 5px}
+.tsized{font-size:10px;font-weight:600}
+.tsized.pos{color:var(--green)}
+.tsized.neg{color:var(--red)}
+.trr.pos{color:var(--green)}
+.trr.neg{color:var(--red)}
+.tlo{font-size:8.5px;font-weight:700;letter-spacing:.05em;color:#8E8E93;background:rgba(142,142,147,0.16);border:1px solid rgba(142,142,147,0.3);border-radius:4px;padding:1px 5px;margin-left:4px}
+.trow-day.lo-row{opacity:0.55;background:repeating-linear-gradient(-45deg,rgba(255,255,255,0.015),rgba(255,255,255,0.015) 6px,rgba(255,255,255,0.04) 6px,rgba(255,255,255,0.04) 12px)}
+.trow-day.lo-row .tacct{font-style:italic}
+.dnote-show{font-size:11px;color:var(--muted);font-style:italic;margin:6px 0 0;padding:6px 9px;background:rgba(255,176,32,0.07);border-left:2px solid var(--amber);border-radius:6px}
+.collapser{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:10px}
+.collapse-arrow{transition:transform .2s;color:var(--muted)}
+.collapse-arrow.open{transform:rotate(90deg)}
+.collapse-body{margin-bottom:10px}
+.dt-panel{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:12px 13px}
+.dt-head{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.dt-head b{color:var(--text)}
+.dt-row{display:grid;grid-template-columns:14px 1fr 70px auto;align-items:center;gap:8px;margin:7px 0}
+.dt-dot{width:10px;height:10px;border-radius:3px}
+.dt-label{font-size:12px;color:var(--text)}
+.dt-desc{font-size:10px;color:var(--faint)}
+.dt-bar{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.dt-fill{display:block;height:100%;border-radius:3px}
+.dt-val{font-size:11px;color:var(--muted);text-align:right;white-space:nowrap}
+.dt-val b{color:var(--text)}
+.dt-sub{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:12px 0 4px}
+.dt-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:10px;padding:8px 10px;background:rgba(48,209,88,0.07);border-left:2px solid var(--green);border-radius:6px}
+.dt-note b{color:var(--text)}
+.avgday-panel{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:12px 13px}
+.av-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:7px 8px;align-items:center}
+.av-head{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:right}
+.av-lbl{font-size:12px;color:var(--text)}
+.av-val{font-size:14px;font-weight:700;text-align:right}
+.av-val.pos{color:var(--green)}
+.av-val.neg{color:var(--red)}
+.av-n{font-size:9px;font-weight:600;color:var(--faint);margin-left:5px}
+.av-up{color:var(--green);font-weight:700}
+.av-down{color:var(--red);font-weight:700}
+.av-flat{color:var(--faint)}
+.fn-panel{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:13px}
+.fn-row{margin:11px 0}
+.fn-row:first-child{margin-top:2px}
+.fn-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.fn-lbl{font-size:12px;color:var(--text);font-weight:600}
+.fn-cnt{font-size:12px;color:var(--muted)}
+.fn-cnt b{color:var(--text);font-size:15px}
+.fn-sub{font-size:10px;color:var(--faint)}
+.fn-bar{height:9px;background:rgba(255,255,255,0.05);border-radius:5px;overflow:hidden}
+.fn-fill{display:block;height:100%;border-radius:5px;transition:width .3s}
+.fn-pct{font-size:9px;color:var(--faint);margin-top:3px;text-align:right}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-over">ATM Trading Systems</div>
+  <div class="hdr-title">TRACKER</div>
+  <div class="hdr-sub" id="hdr-sub">Business &amp; prop position</div>
+</div>
+
+<div class="page active" id="page-prop">
+  <div class="lead">Challenge pipeline</div><div class="grid" id="pipe-grid"></div>
+  <div class="lead">Funded accounts</div><div class="grid" id="funded-grid"></div>
+  <div class="lead">Conversion \u00b7 R to realized return</div>
+  <div id="conv-funnel"></div>
+  <div class="verdict-box" id="conv-verdict"></div>
+  <div class="lead">Business P&amp;L</div><div class="grid" id="pnl-grid"></div>
+  <div class="lead">Personal challenge spend</div>
+  <div class="card"><div class="c-top"><div style="font-size:12px;color:var(--muted)">Auto from account log &minus; live-funded purchases</div>
+  <input class="inline-input" id="pspend" inputmode="decimal"></div>
+  <div class="note">Derived value shown; type to override, clear to restore auto.</div></div>
+  <div class="lead">By account size</div><div class="tbl" id="size-tbl"></div>
+</div>
+
+<div class="page" id="page-accounts">
+  <div class="lead">Account log &middot; <span id="acct-count"></span></div>
+  <div class="chips" id="acct-filters"></div>
+  <div id="acct-list"></div>
+</div>
+
+<div class="page" id="page-rotation">
+  <div class="lead">Next to trade</div>
+  <div id="rot-next"></div>
+  <div class="lead">Rotation order &middot; cycle carries across sessions</div>
+  <div class="tbl" id="rot-list"></div>
+  <div class="note" id="rot-note"></div>
+  <div id="rot-extra"></div>
+</div>
+
+<div class="page" id="page-capital">
+  <div class="lead">Live account</div><div class="grid" id="live-grid"></div>
+  <div class="lead">Road to &pound;100k</div><div class="grid" id="proj-grid"></div>
+  <div class="lead">Risk tiers</div><div class="tbl" id="tier-tbl"></div>
+  <div class="lead">Payout log</div><div id="payout-list"></div>
+  <div class="lead">Director\u2019s loan \u00b7 owed to you</div><div id="dirloan-card"></div>
+  <div class="lead">Live transactions</div><div id="tx-list"></div>
+  <div class="lead">Investment pie &middot; market value</div>
+  <div class="card"><div class="c-top"><div style="font-size:12px;color:var(--muted)">Contributions <b id="pie-contrib" style="color:var(--text)"></b></div>
+  <input class="inline-input" id="pie-val" inputmode="decimal"></div>
+  <div class="tbl" id="pie-tbl" style="margin-top:9px"></div>
+  <div class="note">Contributions tracked exactly (10% of each payout). Growth = your entered Trading 212 market value minus contributions. Update the value periodically from the 212 app.</div></div>
+</div>
+
+<div class="page" id="page-charts">
+  <div class="chart-card">
+    <div class="chart-title">Live account balance</div>
+    <div class="chart-sub">Running balance: injections, trade P&amp;L, withdrawals &amp; costs</div>
+    <div id="chart-balance"></div>
+    <div class="chart-legend" id="chart-balance-leg"></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Cumulative payouts by firm</div>
+    <div class="chart-sub">Cumulative total (green) \u00b7 per-firm dashed</div>
+    <div id="chart-payouts"></div>
+    <div class="chart-legend" id="chart-payouts-leg"></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Challenge funnel</div>
+    <div class="chart-sub">Started \u2192 passed \u2192 funded, cumulative</div>
+    <div id="chart-funnel"></div>
+    <div class="chart-legend" id="chart-funnel-leg"></div>
+  </div>
+</div>
+
+<div class="page" id="page-stats">
+  <div class="lead">Business economics</div><div class="grid" id="bstats-grid"></div>
+  <div id="bstats-verdict" class="verdict-box"></div>
+  <div class="lead">Challenge performance</div><div class="grid" id="cstats-grid"></div>
+  <div class="lead">By firm</div><div class="tbl" id="firm-tbl"></div>
+  <div class="lead">Monthly performance</div><div class="tbl" id="month-tbl"></div>
+</div>
+
+<div class="page" id="page-log">
+  <div class="collapser" id="sess-collapser"><span>Manual sessions &amp; export</span><span class="collapse-arrow" id="sess-arrow">&#9656;</span></div>
+  <div class="collapse-body" id="sess-body" style="display:none">
+    <div id="sess-list"></div>
+    <div class="lead">Export</div>
+    <button class="exp-btn" id="exp-btn2">Export Excel workbook</button>
+  </div>
+  <div class="lead">Performance trends \u00b7 from daily log</div>
+  <div id="log-trends"></div>
+  <div class="lead">Average day \u00b7 lifetime vs recent</div>
+  <div id="log-avgday" class="avgday-panel"></div>
+  <div class="lead">Day types \u00b7 what to expect</div>
+  <div id="log-daytypes" class="dt-panel"></div>
+  <div class="lead">Daily activity \u00b7 auto from trades</div><div id="daily-log"></div>
+  <div class="lead" style="display:none">Export</div>
+  <button class="exp-btn" id="exp-btn">Export Excel workbook</button>
+  <div class="note">Clean flat tables: Accounts, Payouts, Live account, Sessions, Monthly, Pie. For accounting use.</div>
+</div>
+
+<button class="fab" id="fab">+</button>
+
+<div class="tabbar">
+  <div class="tab active" data-page="prop"><span class="tab-ico">&#9632;</span><span class="tab-lbl">Prop</span></div>
+  <div class="tab" data-page="accounts"><span class="tab-ico">&#9776;</span><span class="tab-lbl">Accounts</span></div>
+  <div class="tab" data-page="rotation"><span class="tab-ico">&#8635;</span><span class="tab-lbl">Rotation</span></div>
+  <div class="tab" data-page="capital"><span class="tab-ico">&#163;</span><span class="tab-lbl">Capital</span></div>
+  <div class="tab" data-page="charts"><span class="tab-ico">&#128200;</span><span class="tab-lbl">Charts</span></div>
+  <div class="tab" data-page="stats"><span class="tab-ico">&#8721;</span><span class="tab-lbl">Stats</span></div>
+  <div class="tab" data-page="log"><span class="tab-ico">&#9636;</span><span class="tab-lbl">Log</span></div>
+</div>
+
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal-body"></div></div>
+
+<script>
+var SEED = {"accounts":[{"registerDate":"2025-12-26","firm":"FP","size":"5K","stage":"Phase 1","accountId":"#11345406","dateStarted":"2025-12-26","dateCompleted":"2026-01-13","fee":28.0,"payout":0,"refund":0,"status":"Passed","linkedAcct":"#FND-001","notes":"","inRotation":false},{"registerDate":"2026-01-13","firm":"FP","size":"5K","stage":"Funded","accountId":"#FND-001","dateStarted":"2026-01-13","dateCompleted":"2026-04-29","fee":0,"payout":330.1,"refund":0,"status":"Breached","linkedAcct":"#11345406","notes":"Funded Jan 2026","inRotation":false},{"registerDate":"2025-12-26","firm":"FP","size":"5K","stage":"Phase 1","accountId":"#11452804","dateStarted":"2025-12-26","dateCompleted":"2026-03-01","fee":28.0,"payout":0,"refund":0,"status":"Failed","linkedAcct":"","notes":"","inRotation":false},{"registerDate":"2026-02-08","firm":"FP","size":"25K","stage":"Phase 1","accountId":"#11547432","dateStarted":"2026-02-08","dateCompleted":"2026-04-09","fee":120.0,"payout":0,"refund":0,"status":"Failed","linkedAcct":"","notes":"","inRotation":false},{"registerDate":"2026-02-08","firm":"FP","size":"25K","stage":"Phase 1","accountId":"#11548868","dateStarted":"2026-02-08","dateCompleted":"2026-04-15","fee":120.0,"payout":0,"refund":0,"status":"Failed","linkedAcct":"","notes":"","inRotation":false},{"registerDate":"2026-02-08","firm":"FP","size":"25K","stage":"Phase 1","accountId":"#11548899","dateStarted":"2026-02-08","dateCompleted":"2026-04-15","fee":120.0,"payout":0,"refund":0,"status":"Failed","linkedAcct":"","notes":"","inRotation":false},{"registerDate":"2026-02-08","firm":"FP","size":"25K","stage":"Phase 1","accountId":"#11547436","dateStarted":"2026-02-08","dateCompleted":"2026-03-01","fee":120.0,"payout":0,"refund":0,"status":"Failed","linkedAcct":"","notes":"","inRotation":false},{"registerDate":"2026-04-24","firm":"FP","size":"5K","stage":"Phase 1","accountId":"#12064518","dateStarted":"2026-04-24","dateCompleted":"","fee":30.0,"payout":0,"refund":0,"status":"Active","linkedAcct":"","notes":"","inRotation":true},{"registerDate":"2026-04-24","firm":"FP","size":"5K","stage":"Phase 1","accountId":"#12065329","dateStarted":"2026-04-24","dateCompleted":"2026-05-11","fee":30.0,"payout":0,"refund":0,"status":"Passed","linkedAcct":"#12168037","notes":"","inRotation":false},{"registerDate":"2026-04-24","firm":"FP","size":"5K","stage":"Phase 1","accountId":"#11533723","dateStarted":"2026-04-24","dateCompleted":"2026-05-05","fee":30.0,"payout":0,"refund":0,"status":"Passed","linkedAcct":"#12130807","notes":"","inRotation":false},{"registerDate":"2026-05-05","firm":"FP","size":"5K","stage":"Funded","accountId":"#12130807","dateStarted":"2026-05-05","dateCompleted":"","fee":0,"payout":0,"refund":0,"status":"Funded Active","linkedAcct":"#11533723","notes":"Funded May 2026","inRotation":false},{"registerDate":"2026-05-11","firm":"FP","size":"5K","stage":"Funded","accountId":"#12168037","dateStarted":"2026-05-11","dateCompleted":"","fee":0,"payout":0,"refund":0,"status":"Funded Active","linkedAcct":"#12065329","notes":"Funded May 2026","inRotation":false},{"registerDate":"2026-05-15","firm":"FP","size":"50K","stage":"Phase 1","accountId":"#12205117","dateStarted":"2026-05-15","dateCompleted":"2026-06-23","fee":172.0,"payout":0,"refund":0,"status":"Passed","linkedAcct":"#20206559","notes":"","inRotation":false},{"registerDate":"2026-05-15","firm":"FP","size":"25K","stage":"Phase 1","accountId":"#12284682","dateStarted":"2026-05-15","dateCompleted":"2026-06-12","fee":93.0,"payout":0,"refund":0,"status":"Failed","linkedAcct":"","notes":"","inRotation":false},{"registerDate":"2026-05-15","firm":"FP","size":"25K","stage":"Phase 1","accountId":"#12205152","dateStarted":"2026-05-15","dateCompleted":"","fee":93.0,"payout":0,"refund":0,"status":"Active","linkedAcct":"","notes":"","inRotation":true},{"registerDate":"2026-06-23","firm":"FP","size":"50K","stage":"Funded","accountId":"#20206559","dateStarted":"2026-06-23","dateCompleted":"","fee":0,"payout":0,"refund":0,"status":"Funded Active","linkedAcct":"#12205117","notes":"","inRotation":true}],"payouts":[{"_id":"p1","date":"2026-04-29","accountId":"#FND-001","size":"5K","gross":330.1,"live":264.08,"pie":33.01,"personal":33.01,"notes":""}],"liveTx":[{"_id":"t1","date":"2026-04-29","type":"Challenge Purchase","amount":-264.08,"ref":"Challenge purchases \u2014 Apr 2026 batch (from payout)"},{"_id":"t2","date":"2026-05-06","type":"Direct Deposit","amount":13.66,"ref":"Director gift"},{"_id":"t3","date":"2026-05-08","type":"Direct Deposit","amount":20.29,"ref":"Director gift"}],"sessions":[{"_id":"s0","date":"2026-05-12","accounts":["#12168037","#12130807","#12064518"],"trades":3,"losses":2,"notes":""},{"_id":"s1","date":"2026-05-13","accounts":["#12168037","#12130807","#12064518"],"trades":3,"losses":1,"notes":""},{"_id":"s2","date":"2026-05-14","accounts":["#12168037","#12130807","#12064518"],"trades":3,"losses":2,"notes":""},{"_id":"s3","date":"2026-05-15","accounts":["#12205117","#12205155"],"trades":2,"losses":2,"notes":""},{"_id":"s4","date":"2026-05-18","accounts":["#12205152","#12168037","#12205117"],"trades":3,"losses":2,"notes":""},{"_id":"s5","date":"2026-05-19","accounts":["#12205155","#12205117","#12205152","#12168037"],"trades":4,"losses":1,"notes":""},{"_id":"s6","date":"2026-05-20","accounts":["#12205117","#12205155","#12205152","#12168037"],"trades":4,"losses":2,"notes":""},{"_id":"s7","date":"2026-05-21","accounts":["#12205117","#12205155"],"trades":2,"losses":2,"notes":""},{"_id":"s8","date":"2026-05-22","accounts":[],"trades":0,"losses":0,"notes":""},{"_id":"s9","date":"2026-05-25","accounts":["#12205152","#12168037","#12205117","#12205155"],"trades":4,"losses":1,"notes":""},{"_id":"s10","date":"2026-05-26","accounts":["#12205117","#12205155","#12205152","#12130807"],"trades":4,"losses":2,"notes":""},{"_id":"s11","date":"2026-05-27","accounts":["#12205117","#12284682","#12205152","#12130807"],"trades":4,"losses":0,"notes":""},{"_id":"s12","date":"2026-05-28","accounts":["#12205117","#12284682","#12205152"],"trades":3,"losses":1,"notes":""},{"_id":"s13","date":"2026-05-29","accounts":["#12130807","#12205117","#12284682","#12205152"],"trades":4,"losses":1,"notes":""},{"_id":"s14","date":"2026-06-01","accounts":["#12205117","#12284682"],"trades":2,"losses":2,"notes":""},{"_id":"s15","date":"2026-06-02","accounts":["#12205152","#12130807","#12205117","#12284682"],"trades":4,"losses":2,"notes":""},{"_id":"s16","date":"2026-06-03","accounts":["#12205117","#12284682","#12205152","#12130807"],"trades":4,"losses":1,"notes":""},{"_id":"s17","date":"2026-06-04","accounts":["#12205117","#12284682","#12205152"],"trades":3,"losses":1,"notes":""},{"_id":"s18","date":"2026-06-05","accounts":["#12130807","#12205117"],"trades":2,"losses":0,"notes":"Cycle no longer resets to biggest account \u2014 carries through slots for even distribution"},{"_id":"s19","date":"2026-06-09","accounts":["#12205152","#12130807","#12205117","#12284682"],"trades":4,"losses":0,"notes":""},{"_id":"s20","date":"2026-06-12","accounts":["#12205117","#12284682","#12205152"],"trades":3,"losses":0,"notes":""}],"pie":[{"sleeve":"Core","ticker":"VWRP","pct":50,"name":"Vanguard FTSE All-World (Acc)"},{"sleeve":"Growth","ticker":"SEMI","pct":12,"name":"iShares MSCI Global Semiconductors"},{"sleeve":"Aligned","ticker":"EQQQ","pct":10,"name":"Invesco EQQQ Nasdaq-100 (Acc)"},{"sleeve":"Growth","ticker":"WSML","pct":10,"name":"iShares MSCI World Small Cap"},{"sleeve":"Conviction","ticker":"RR.","pct":7,"name":"Rolls-Royce Holdings"},{"sleeve":"Speculative","ticker":"MSTR","pct":6,"name":"Strategy (Bitcoin proxy)"},{"sleeve":"Speculative","ticker":"ROBO","pct":5,"name":"L&G ROBO Global Robotics & Automation"}],"settings":{"rotationCursor":null,"personalSpendOverride":null,"pieValue":33.0}};
+var KEY='atm_business';
+var db=load();
+function load(){
+ var d=null;
+ try{var r=localStorage.getItem(KEY);if(r)d=JSON.parse(r);}catch(e){}
+ if(!d){d=JSON.parse(JSON.stringify(SEED));}
+ // migrate: ensure new fields exist
+ d.accounts=(d.accounts||[]).map(function(a){
+   if(!a._id)a._id='a_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+   if(!a.firm)a.firm='FundingPips';
+   if(a.currentBalance==null)a.currentBalance='';
+   if(!a.rotState){ a.rotState = (a.status==='Active'||a.status==='Funded Active') ? 'In rotation' : 'Out'; }
+   // auto-sync: non-tradeable statuses are always Out; tradeable defaults to In unless parked/swing
+   if(a.status!=='Active'&&a.status!=='Funded Active'){ a.rotState='Out'; }
+   else if(a.rotState==='Out'){ a.rotState='In rotation'; }
+   return a;
+ });
+ d.settings=d.settings||{};
+ // one-time: wipe historical seeded sessions so logging starts fresh & accurate
+ if(!d.settings._sessionsReset){ d.sessions=[]; d.settings._sessionsReset=true; d.settings.rotationCursor=null; }
+ save(d);return d;
+}
+function save(d){try{localStorage.setItem(KEY,JSON.stringify(d||db));}catch(e){}}
+function uid(p){return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);}
+var SIZES=['5K','10K','25K','50K','100K'],STAGES=['Phase 1','Phase 2','Funded'],
+STATUSES=['Active','Passed','Failed','Breached','Funded Active'];
+function sizeNum(s){return parseInt(String(s).replace(/[Kk]/,'000'),10)||0;}
+function money(n){return (n<0?'-\u00a3':'\u00a3')+Math.abs(n).toLocaleString('en-GB',{maximumFractionDigits:2});}
+function usd(n){return (n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0});}
+function pct(n){return (n*100).toFixed(0)+'%';}
+function today(){return new Date().toISOString().slice(0,10);}
+
+/* nav */
+document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){nav(t.dataset.page);});});
+function nav(p){document.querySelectorAll('.page').forEach(function(e){e.classList.remove('active');});
+ document.getElementById('page-'+p).classList.add('active');
+ document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.page===p);});
+ var fab=document.getElementById('fab');
+ fab.style.display=(p==='accounts'||p==='capital'||p==='log')?'flex':'none';
+ fab.onclick=(p==='accounts')?function(){acctModal();}:(p==='capital')?function(){capitalAddMenu();}:(p==='log')?function(){sessModal();}:null;
+ window.scrollTo(0,0);}
+
+/* ---- derived core ---- */
+function isEval(a){return a.stage!=='Funded';}
+// A challenge is INITIATED at Phase 1 — a Phase 2 is a continuation of the same challenge,
+// not a new one. So challenge COUNT (started) = Phase 1 records only.
+function isChallengeStart(a){return a.stage==='Phase 1';}
+function liveBalance(){var b=0;db.payouts.forEach(function(p){b+=(+p.live||0);});db.liveTx.forEach(function(t){b+=(+t.amount||0);});return b;}
+function tierFor(b){if(b>=100000)return['T5','1\u20131.5%'];if(b>=15000)return['T4','3%'];if(b>=5000)return['T3','4%'];if(b>=2000)return['T2','7%'];return['T1','10%'];}
+var TIERS=[['T1','\u00a30 \u2013 \u00a32,000','10%'],['T2','\u00a32,000 \u2013 \u00a35,000','7%'],['T3','\u00a35,000 \u2013 \u00a315,000','4%'],['T4','\u00a315,000 \u2013 \u00a3100,000','3%'],['T5','\u00a3100,000+','1\u20131.5%']];
+function autoPersonalSpend(){var fees=db.accounts.reduce(function(s,a){return s+(+a.fee||0);},0);
+ var liveFunded=db.liveTx.filter(function(t){return t.type==='Challenge Purchase';}).reduce(function(s,t){return s+Math.abs(+t.amount||0);},0);
+ return fees-liveFunded;}
+
+/* ---- Prop dashboard ---- */
+function stat(l,v,s,c){return '<div class="stat"><div class="stat-lbl">'+l+'</div><div class="stat-val '+(c||'')+'">'+v+'</div>'+(s?'<div class="stat-sub">'+s+'</div>':'')+'</div>';}
+function renderConversion(){
+ var host=document.getElementById('conv-funnel'); if(!host) return;
+ var A=db.accounts, ev=A.filter(isEval), fd=A.filter(function(a){return !isEval(a);});
+ // Funnel stages (account journey)
+ var challenges=ev.filter(isChallengeStart).length;  // Phase 1 = challenge started
+ var reachedFunded=fd.length;                       // accounts that got to funded
+ var fundedActive=fd.filter(function(a){return a.status==='Funded Active';}).length;
+ var breached=fd.filter(function(a){return a.status==='Breached';}).length;
+ // Accounts that actually PAID (caught enough variance to withdraw)
+ var paidSet={}; db.payouts.forEach(function(p){ if(p.accountId)paidSet[p.accountId]=true; });
+ var fundedPaid=fd.filter(function(a){return paidSet[a.accountId];}).length;
+ // Money conversion
+ var fees=ev.reduce(function(s,a){return s+(+a.fee||0);},0);
+ var gross=db.payouts.reduce(function(s,p){return s+(+p.gross||0);},0);
+ var youKeep=db.payouts.reduce(function(s,p){ // your share = live + pie + personal (all yours; firm keeps nothing of the split, the 80/10/10 is YOUR allocation)
+   var l=+p.live||0, pi=+p.pie||0, pe=+p.personal||0;
+   if(l+pi+pe===0 && (+p.gross||0)>0){ return s+(+p.gross); }  // fallback: whole gross is yours
+   return s+l+pi+pe;
+ },0);
+ var netBusiness=youKeep-fees;
+ // Variance-capture rate: of funded accounts, what % caught a payout
+ var captureRate = reachedFunded? fundedPaid/reachedFunded : null;
+ var challengeToFunded = challenges? reachedFunded/challenges : null;
+ var challengeToPaid = challenges? fundedPaid/challenges : null;
+
+ // ── Funnel visual (horizontal bars, each stage as a share of challenges started) ──
+ function stageBar(label,count,denom,col,sub){
+   var pct=denom?Math.round(count/denom*100):0;
+   return '<div class="fn-row"><div class="fn-top"><span class="fn-lbl">'+label+'</span><span class="fn-cnt"><b>'+count+'</b>'+(sub?' <span class="fn-sub">'+sub+'</span>':'')+'</span></div>'+
+          '<div class="fn-bar"><span class="fn-fill" style="width:'+Math.max(pct,2)+'%;background:'+col+'"></span></div>'+
+          '<div class="fn-pct">'+pct+'% of started</div></div>';
+ }
+ var funnelHtml=
+   stageBar('Challenges started',challenges,challenges,'#8E8E93','')+
+   stageBar('Reached funded',reachedFunded,challenges,'#0A84FF',challengeToFunded!=null?Math.round(challengeToFunded*100)+'% pass-through':'')+
+   stageBar('Currently active',fundedActive,challenges,'#FFB020','')+
+   stageBar('Actually paid out',fundedPaid,challenges,'#30D158',captureRate!=null?Math.round(captureRate*100)+'% of funded':'');
+ host.innerHTML='<div class="fn-panel">'+funnelHtml+'</div>';
+
+ // ── Verdict: the conversion story ──
+ var vhost=document.getElementById('conv-verdict'); if(!vhost) return;
+ var L=[];
+ function V(sev,ico,html){L.push('<div class="vd-line '+sev+'"><span class="vd-ico">'+ico+'</span>'+html+'</div>');}
+ // 1. The core variance-capture read
+ if(captureRate!=null){
+   if(fundedPaid===0){
+     V('bad','\u2715','<b>0 of '+reachedFunded+' funded accounts have paid out yet.</b> None have caught enough of a run to reach a withdrawal. This is the critical gap \u2014 funded accounts exist but haven\u2019t converted variance into realized return.');
+   } else {
+     var cr=Math.round(captureRate*100);
+     V(cr>=50?'good':cr>=25?'warn':'bad', cr>=50?'\u2713':'\u25B3',
+       '<b>'+fundedPaid+' of '+reachedFunded+' funded accounts ('+cr+'%) have caught a payout.</b> That is your variance-capture rate \u2014 the share of funded accounts that hit a good enough bout to withdraw. '+(cr<50?'Most funded accounts are not yet catching the run they need.':'A solid share are converting.'));
+   }
+ }
+ // 2. Full pipeline conversion (challenge -> paid)
+ if(challengeToPaid!=null){
+   var ctp=Math.round(challengeToPaid*100);
+   V('warn','\u2192','<b>'+ctp+'% of all challenges started ('+fundedPaid+' of '+challenges+') have converted to a paying account.</b> Every challenge is a bet; this is how many bets have fully paid off through all stages \u2014 challenge, rotation, funded, and payout.');
+ }
+ // 3. Money conversion — R generated vs money kept
+ if(fees>0){
+   var ratio=youKeep/fees;
+   V(ratio>=1?'good':'bad', ratio>=1?'\u2713':'\u2715',
+     '<b>'+money(youKeep)+' realized vs '+money(fees)+' spent on fees</b> \u2014 '+(ratio>=1?'net +'+money(netBusiness)+', the machine is ahead.':money(netBusiness)+', still '+money(-netBusiness)+' underwater. Realized return has not yet caught up to the cost of generating it.'));
+ }
+ // 4. The insight about what needs to happen
+ if(fundedActive>0 && fundedPaid<reachedFunded){
+   var waiting=fundedActive-db.payouts.filter(function(p){return p.accountId;}).length;
+   V('warn','\u26A1','<b>'+fundedActive+' funded account'+(fundedActive>1?'s are':' is')+' live and awaiting their bout of variance.</b> The edge is positive per trade, so given enough trading days each funded account should eventually catch a payable run \u2014 the conversion is a function of survival time on the funded accounts, not a broken edge.');
+ }
+ vhost.innerHTML=L.join('');
+}
+
+function renderProp(){
+ renderConversion();
+ var A=db.accounts,ev=A.filter(isEval),fd=A.filter(function(a){return !isEval(a);});
+ var p=ev.filter(function(a){return a.status==='Passed';}).length,
+     f=ev.filter(function(a){return a.status==='Failed'||a.status==='Breached';}).length,
+     act=ev.filter(function(a){return a.status==='Active';}).length;
+ document.getElementById('pipe-grid').innerHTML=
+  stat('Challenges',ev.filter(isChallengeStart).length,act+' active now')+stat('Passed',p,'','pos')+
+  stat('Failed',f,'',f?'neg':'')+stat('Pass rate',(p+f)?pct(p/(p+f)):'\u2014','of completed','amb');
+ var fa=fd.filter(function(a){return a.status==='Funded Active';}),
+     fb=fd.filter(function(a){return a.status==='Breached';}).length,
+     pays=db.payouts.reduce(function(s,x){return s+(+x.gross||0);},0),
+     // Funded book excludes Final-swing accounts — they're being wound down, not active book.
+     book=fa.filter(function(a){return a.rotState!=='Final swing';}).reduce(function(s,a){return s+sizeNum(a.size);},0);
+ document.getElementById('funded-grid').innerHTML=
+  stat('Funded total',fd.length,fa.filter(function(a){return a.rotState!=='Final swing';}).length+' active'+(fa.filter(function(a){return a.rotState==='Final swing';}).length?' + '+fa.filter(function(a){return a.rotState==='Final swing';}).length+' final-swing':''),'pos')+stat('Breached',fb,'',fb?'neg':'')+
+  stat('Total payouts',money(pays),'gross','pos')+stat('Funded book',usd(book),'active size','amb');
+ var fees=ev.reduce(function(s,a){return s+(+a.fee||0);},0),
+     refunds=A.reduce(function(s,a){return s+(+a.refund||0);},0),
+     rev=pays+refunds,net=rev-fees;
+ document.getElementById('pnl-grid').innerHTML=
+  stat('Total fees',money(fees),'challenge spend')+stat('Revenue',money(rev),'payouts + refunds','pos')+
+  stat('Net P&L',money(net),'',net>=0?'pos':'neg')+stat('ROI',fees?pct(rev/fees-1):'\u2014','',rev>=fees?'pos':'neg');
+ var ps=document.getElementById('pspend');
+ ps.value=(db.settings.personalSpendOverride!=null?db.settings.personalSpendOverride:autoPersonalSpend()).toFixed(2);
+ var rows='<div class="trow head"><div class="tc l">Size</div><div class="tc">Chal</div><div class="tc">Pass</div><div class="tc">Rate</div><div class="tc">Net \u00a3</div></div>';
+ SIZES.forEach(function(sz){
+  var e=ev.filter(function(a){return a.size===sz;});
+  var starts=e.filter(isChallengeStart);          // Phase 1 records = challenges started
+  var fdsz=fd.filter(function(a){return a.size===sz;});
+  if(!e.length&&!fdsz.length)return;
+  var pp=e.filter(function(a){return a.status==='Passed'&&a.stage==='Phase 2';}).length,
+      ff=e.filter(function(a){return a.status==='Failed'||a.status==='Breached';}).length,
+      fe=e.reduce(function(s,a){return s+(+a.fee||0);},0),
+      pay=db.payouts.filter(function(x){return String(x.size||'').toUpperCase()===sz;}).reduce(function(s,x){return s+(+x.gross||0);},0)
+          + fd.filter(function(a){return a.size===sz;}).reduce(function(s,a){return s+(+a.payout||0);},0)
+          - (function(){ // avoid double count: subtract account.payout already represented in payout log
+              var ids=db.payouts.filter(function(x){return String(x.size||'').toUpperCase()===sz;}).map(function(x){return x.accountId;});
+              return fd.filter(function(a){return a.size===sz&&ids.indexOf(a.accountId)>=0;}).reduce(function(s,a){return s+(+a.payout||0);},0);
+            })(),
+      nn=pay-fe;
+  rows+='<div class="trow"><div class="tc l">'+sz+'</div><div class="tc">'+starts.length+'</div><div class="tc pos">'+pp+'</div><div class="tc">'+((pp+ff)?pct(pp/(pp+ff)):'\u2014')+'</div><div class="tc '+(nn>=0?'pos':'neg')+'">'+money(nn)+'</div></div>';});
+ document.getElementById('size-tbl').innerHTML=rows;
+}
+document.getElementById('pspend').addEventListener('change',function(){
+ var v=this.value.trim();
+ db.settings.personalSpendOverride=(v==='')?null:(parseFloat(v)||0);save();renderProp();});
+
+/* ---- Accounts ---- */
+var acctFilter='all';
+function renderAccounts(){
+ document.getElementById('acct-count').textContent=db.accounts.length+' total';
+ var F=[['all','All'],['Active','Active'],['Funded Active','Funded'],['Passed','Passed'],['Failed','Failed/Breached']];
+ var fr=document.getElementById('acct-filters');
+ fr.innerHTML=F.map(function(x){return '<div class="chip '+(acctFilter===x[0]?'on':'')+'" data-f="'+x[0]+'">'+x[1]+'</div>';}).join('');
+ fr.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){acctFilter=c.dataset.f;renderAccounts();});});
+ var L=db.accounts.slice().sort(function(a,b){return (b.registerDate||'')<(a.registerDate||'')?-1:1;})
+  .filter(function(a){if(acctFilter==='all')return true;if(acctFilter==='Failed')return a.status==='Failed'||a.status==='Breached';return a.status===acctFilter;});
+ var el=document.getElementById('acct-list');
+ if(!L.length){el.innerHTML='<div class="empty">No accounts match.</div>';return;}
+ el.innerHTML=L.map(function(a){
+  var b=a.status==='Funded Active'?'b-funded':a.status==='Active'?'b-active':a.status==='Passed'?'b-passed':'b-failed';
+  var m=['<span>'+a.stage+'</span>'];
+  if(+a.fee)m.push('Fee <b>'+money(+a.fee)+'</b>');
+  if(+a.payout)m.push('Payout <b>'+money(+a.payout)+'</b>');
+  if(a.registerDate)m.push('<span>'+a.registerDate+'</span>');
+  m.push('<span>'+(a.firm||'FundingPips').replace('Funding','FP').replace(' Funded',' Aqua')+'</span>');
+  if(a.currentBalance!==''&&a.currentBalance!=null)m.push('Bal <b>'+money(+a.currentBalance)+'</b>');
+  if(a.status==='Active'||a.status==='Funded Active'){var rs=a.rotState||(a.inRotation?'In rotation':'Out');
+   var col=rs==='In rotation'?'var(--amber)':rs==='Final swing'?'var(--red)':'var(--muted)';
+   m.push('<b style="color:'+col+'">'+rs+'</b>');}
+  return '<div class="card"><div class="c-top"><div class="c-id">'+(a.accountId||'(no id)')+'</div><div class="c-size">'+a.size+'</div></div>'+
+   '<div class="c-meta">'+m.join('')+'</div><div style="margin-top:6px"><span class="badge '+b+'">'+a.status+'</span></div>'+
+   (function(){
+     var btns='';
+     var tradeable=(a.status==='Active'||a.status==='Funded Active');
+     if(a.status==='Active'&&(a.stage==='Phase 1'||a.stage==='Phase 2')){
+       btns+='<div class="mini pri" data-pass="'+a._id+'">Passed &rarr;</div><div class="mini del" data-fail="'+a._id+'">Failed</div>';
+     }
+     if(tradeable){
+       var rs=a.rotState||'In rotation';
+       if(rs==='In rotation') btns+='<div class="mini" data-park="'+a._id+'">Park</div><div class="mini" data-swing="'+a._id+'">Swing</div>';
+       else btns+='<div class="mini" data-resume="'+a._id+'">Resume &#8635;</div>';
+     }
+     return '<div class="acts">'+btns+'<div class="mini" data-e="'+a._id+'">Edit</div><div class="mini del" data-d="'+a._id+'">Delete</div></div></div>';
+   })();}).join('');
+ el.querySelectorAll('[data-e]').forEach(function(x){x.addEventListener('click',function(){acctModal(x.dataset.e);});});
+ el.querySelectorAll('[data-pass]').forEach(function(x){x.addEventListener('click',function(){
+  var a=db.accounts.find(function(q){return q._id===x.dataset.pass;}); if(a) advancePhase(a);});});
+ el.querySelectorAll('[data-fail]').forEach(function(x){x.addEventListener('click',function(){
+  if(x.textContent!=='Confirm?'){x.textContent='Confirm?';setTimeout(function(){x.textContent='Failed';},3000);return;}
+  var a=db.accounts.find(function(q){return q._id===x.dataset.fail;});
+  if(a){a.status='Failed';a.dateCompleted=a.dateCompleted||today();a.rotState='Out';a.inRotation=false;save();renderAll();}});});
+ el.querySelectorAll('[data-park]').forEach(function(x){x.addEventListener('click',function(){
+  var a=db.accounts.find(function(q){return q._id===x.dataset.park;}); if(a){a.rotState='Dormant';a.inRotation=false;save();renderAll();}});});
+ el.querySelectorAll('[data-swing]').forEach(function(x){x.addEventListener('click',function(){
+  var a=db.accounts.find(function(q){return q._id===x.dataset.swing;}); if(a){a.rotState='Final swing';a.inRotation=false;save();renderAll();}});});
+ el.querySelectorAll('[data-resume]').forEach(function(x){x.addEventListener('click',function(){
+  var a=db.accounts.find(function(q){return q._id===x.dataset.resume;}); if(a){a.rotState='In rotation';a.inRotation=true;save();renderAll();}});});
+ el.querySelectorAll('[data-d]').forEach(function(x){x.addEventListener('click',function(){
+  if(x.textContent!=='Confirm?'){x.textContent='Confirm?';setTimeout(function(){x.textContent='Delete';},3000);return;}
+  db.accounts=db.accounts.filter(function(a){return a._id!==x.dataset.d;});save();renderAll();});});
+}
+
+/* ---- Rotation engine ---- */
+function rotationOrder(){
+ var props=db.accounts.filter(function(a){return (a.status==='Active'||a.status==='Funded Active')&&a.rotState==='In rotation';});
+ var rank={'Funded':3,'Phase 2':2,'Phase 1':1};
+ props.sort(function(a,b){var d=sizeNum(b.size)-sizeNum(a.size);if(d)return d;return (rank[b.stage]||0)-(rank[a.stage]||0);});
+ var order=props.map(function(a){return {id:a.accountId||a._id,label:a.accountId||'(no id)',sub:a.size+' \u00b7 '+a.stage,acct:a};});
+ var bal=liveBalance();
+ if(bal>=1000)order.unshift({id:'LIVE',label:'LIVE',sub:money(bal)+' \u00b7 personal capital',acct:null});
+ return order;
+}
+function renderRotation(){
+ var order=rotationOrder();var bal=liveBalance();
+ var cur=db.settings.rotationCursor;
+ var idx=order.findIndex(function(o){return o.id===cur;});
+ if(idx<0)idx=0;
+ if(idx>3)idx=0;   // cursor only cycles the 4 active T1-T4 slots
+ var nx=order[idx];
+ var hero=document.getElementById('rot-next');
+ if(!order.length){hero.innerHTML='<div class="empty">No accounts in rotation. Toggle accounts in via Edit.</div>';document.getElementById('rot-list').innerHTML='';document.getElementById('rot-note').textContent='';return;}
+ hero.innerHTML='<div class="next-hero"><div class="nh-lbl">Next to trade</div><div class="nh-id">'+nx.label+'</div><div class="nh-meta">'+nx.sub+'</div>'+
+  '<div class="acts"><div class="mini pri" id="mark-btn">Mark traded &#10003;</div><div class="mini" id="skip-btn">Skip</div></div></div>';
+ document.getElementById('mark-btn').addEventListener('click',function(){advance(order,idx,true);});
+ document.getElementById('skip-btn').addEventListener('click',function(){advance(order,idx,false);});
+ var active=order.slice(0,4);
+ var queued=order.slice(4);
+ document.getElementById('rot-list').innerHTML=active.map(function(o,i){
+  return '<div class="rot-row"><div class="rot-rank">T'+(i+1)+'</div><div class="rot-id">'+o.label+'<span class="rot-sub">'+o.sub+'</span></div>'+
+   (i===idx?'<span class="badge b-next">NEXT</span>':'')+'</div>';}).join('')
+   + (queued.length?'<div class="lead" style="margin-top:12px">Waiting to enter</div>'+queued.map(function(o){
+      return '<div class="rot-row"><div class="rot-rank">&#8230;</div><div class="rot-id">'+o.label+'<span class="rot-sub">'+o.sub+' \u00b7 next in line</span></div></div>';}).join(''):'');
+ document.getElementById('rot-note').innerHTML='Priority: size, then stage (Funded &gt; P2 &gt; P1). Live takes slot 1 at \u2265\u00a31,000 (balance '+money(bal)+(bal>=1000?' \u2014 in rotation':' \u2014 below threshold, out')+'). Cycle position carries across sessions; order re-forms when accounts join or leave.';
+ // Dormant + Final swing sections
+ var dormant=db.accounts.filter(function(a){return a.rotState==='Dormant'&&(a.status==='Active'||a.status==='Funded Active');});
+ var swing=db.accounts.filter(function(a){return a.rotState==='Final swing'&&(a.status==='Active'||a.status==='Funded Active');});
+ var extra=document.getElementById('rot-extra');
+ var h='';
+ if(dormant.length){
+  h+='<div class="lead">Dormant &middot; parked, out of cycle</div><div class="tbl">'+dormant.map(function(a){
+   return '<div class="rot-row"><div class="rot-rank">&#9679;</div><div class="rot-id">'+(a.accountId||'(no id)')+'<span class="rot-sub">'+a.size+' \u00b7 '+a.stage+'</span></div><span class="badge b-active">DORMANT</span></div>';
+  }).join('')+'</div>';
+ }
+ if(swing.length){
+  h+='<div class="lead">Final swing &middot; one full-size resolution</div><div class="tbl">'+swing.map(function(a){
+   return '<div class="rot-row"><div class="rot-rank">&#9888;</div><div class="rot-id">'+(a.accountId||'(no id)')+'<span class="rot-sub">'+a.size+' \u00b7 '+a.stage+' \u00b7 one clean trigger then resolve</span></div><span class="badge b-next">SWING</span></div>';
+  }).join('')+'</div>';
+ }
+ extra.innerHTML=h;
+}
+function advance(order,idx,logIt){
+ if(logIt){var d=today();var s=db.sessions.find(function(x){return x.date===d;});
+  if(!s){s={_id:uid('s'),date:d,accounts:[],trades:0,losses:0,notes:''};db.sessions.push(s);}
+  var id=order[idx].id;if(s.accounts.indexOf(id)<0)s.accounts.push(id);}
+ db.settings.rotationCursor=order[(idx+1)%order.length].id;
+ save();renderRotation();renderSessions();
+}
+
+/* ---- Capital ---- */
+function renderCapital(){
+ var bal=liveBalance(),t=tierFor(bal);
+ var nextLbl,nextVal;
+ if(bal<1000){ nextLbl='To rotation gate'; nextVal=1000-bal; }
+ else if(bal<2000){ nextLbl='To next tier (T2)'; nextVal=2000-bal; }
+ else if(bal<5000){ nextLbl='To next tier (T3)'; nextVal=5000-bal; }
+ else if(bal<15000){ nextLbl='To next tier (T4)'; nextVal=15000-bal; }
+ else if(bal<100000){ nextLbl='To next tier (T5)'; nextVal=100000-bal; }
+ else { nextLbl='To next tier'; nextVal=0; }
+ document.getElementById('live-grid').innerHTML=
+  stat('Balance',money(bal),'','amb')+stat('Tier',t[0],t[1]+' risk')+
+  stat('Rotation','\u00a31k gate',bal>=1000?'ACTIVE \u2014 slot 1':'inactive \u00b7 '+money(1000-bal)+' to go',bal>=1000?'pos':'')+
+  stat(nextLbl,money(nextVal),'');
+ /* projection: rate from first inflow to today across payout live-legs + tx */
+ var flows=[];
+ db.payouts.forEach(function(p){if(p.date)flows.push(p.date);});
+ db.liveTx.forEach(function(x){if(x.date)flows.push(x.date);});
+ flows.sort();
+ var now=new Date();
+ var months=0;
+ if(flows.length){var f=new Date(flows[0]);months=Math.max(0.25,(now-f)/(1000*3600*24*30.44));}
+ var tradePL=db.liveTx.filter(function(x){return x.type==='Trade P&L';}).reduce(function(s,x){return s+(+x.amount||0);},0);
+ var payIn=db.payouts.reduce(function(s,p){return s+(+p.live||0);},0);
+ // Accumulation = everything that has flowed INTO the live pot (payout legs + trading P&L + any manual tx).
+ var txSum=db.liveTx.reduce(function(s,x){return s+(+x.amount||0);},0);
+ var accumulated=payIn+txSum;                     // total growth deposited into live account to date
+ var lifetimeRate=months>0?accumulated/months:0;
+ // Recent (last 90d) rate — captures current momentum, which the ETA should lean on.
+ var cut=new Date(now.getTime()-90*24*3600*1000);
+ var recentAcc=0, recentSpanM=Math.min(months,3);
+ db.payouts.forEach(function(p){if(p.date&&new Date(p.date)>=cut)recentAcc+=(+p.live||0);});
+ db.liveTx.forEach(function(x){if(x.date&&new Date(x.date)>=cut)recentAcc+=(+x.amount||0);});
+ var recentRate=recentSpanM>0?recentAcc/recentSpanM:0;
+ // Blend: weight recent 70/30 when we have >1 month of history, else lifetime only.
+ var rate = months>1 ? (0.7*recentRate + 0.3*lifetimeRate) : lifetimeRate;
+ if(rate<0) rate=0;
+ var toGo=100000-bal;
+ var mLeft=rate>0?toGo/rate:null;
+ var eta=mLeft?new Date(Date.now()+mLeft*30.44*24*3600*1000):null;
+ function fmtDur(mo){
+   if(mo==null) return '\u2014';
+   var hrs=mo*30.44*24;
+   if(hrs<48) return Math.max(1,Math.round(hrs))+' hours';
+   if(hrs<24*60) return Math.round(hrs/24)+' days';
+   if(mo<12) return Math.round(mo)+' months';
+   var y=Math.floor(mo/12), m=Math.round(mo%12);
+   if(m===12){y++;m=0;}
+   return y+'y'+(m?' '+m+'m':'');
+ }
+ document.getElementById('proj-grid').innerHTML=
+  stat('Run-rate',money(rate)+'/mo',months>1?'recent-weighted accumulation':'over '+fmtDur(months))+
+  stat('To \u00a3100k',fmtDur(mLeft),eta?('~'+eta.getFullYear()):'need inflows','amb')+
+  stat('Payout injections',money(payIn),'80% of payouts \u2192 live')+
+  stat('Live trading P&L',money(tradePL),'logged to date',tradePL>=0?'pos':'neg');
+ var rows='<div class="trow head"><div class="tc l">Tier</div><div class="tc">Range</div><div class="tc">Risk</div></div>';
+ TIERS.forEach(function(x){var hl=x[0]===t[0];
+  rows+='<div class="trow" style="'+(hl?'background:rgba(255,176,32,0.07)':'')+'"><div class="tc l" style="'+(hl?'color:var(--amber)':'')+'">'+x[0]+'</div><div class="tc">'+x[1]+'</div><div class="tc">'+x[2]+'</div></div>';});
+ document.getElementById('tier-tbl').innerHTML=rows;
+ /* payouts */
+ var pl=document.getElementById('payout-list');
+ pl.innerHTML=db.payouts.length?db.payouts.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(p){
+  return '<div class="card"><div class="c-top"><div class="c-id">'+p.date+' \u00b7 '+(p.accountId||'')+'</div><div class="c-size">'+money(+p.gross||0)+'</div></div>'+
+  '<div class="c-meta"><span>Live <b>'+money(+p.live||0)+'</b></span><span>Pie <b>'+money(+p.pie||0)+'</b></span><span>Personal <b>'+money(+p.personal||0)+'</b></span></div>'+
+  '<div class="acts"><div class="mini" data-pe="'+p._id+'">Edit</div><div class="mini del" data-pd="'+p._id+'">Delete</div></div></div>';}).join(''):'<div class="empty">No payouts yet.</div>';
+ pl.querySelectorAll('[data-pe]').forEach(function(x){x.addEventListener('click',function(){payoutModal(x.dataset.pe);});});
+ pl.querySelectorAll('[data-pd]').forEach(function(x){x.addEventListener('click',function(){
+  if(x.textContent!=='Confirm?'){x.textContent='Confirm?';setTimeout(function(){x.textContent='Delete';},3000);return;}
+  db.payouts=db.payouts.filter(function(p){return p._id!==x.dataset.pd;});save();renderAll();});});
+ /* tx */
+ var tl=document.getElementById('tx-list');
+ tl.innerHTML=db.liveTx.length?db.liveTx.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(x){
+  return '<div class="card"><div class="c-top"><div class="c-id" style="font-size:12px">'+x.date+' \u00b7 '+x.type+'</div><div class="'+((+x.amount||0)>=0?'pos':'neg')+'" style="font-weight:750">'+money(+x.amount||0)+'</div></div>'+
+  (x.ref?'<div class="c-meta">'+x.ref+'</div>':'')+
+  '<div class="acts"><div class="mini" data-te="'+x._id+'">Edit</div><div class="mini del" data-td="'+x._id+'">Delete</div></div></div>';}).join(''):'<div class="empty">No transactions.</div>';
+ tl.querySelectorAll('[data-te]').forEach(function(x){x.addEventListener('click',function(){txModal(x.dataset.te);});});
+ tl.querySelectorAll('[data-td]').forEach(function(x){x.addEventListener('click',function(){
+  if(x.textContent!=='Confirm?'){x.textContent='Confirm?';setTimeout(function(){x.textContent='Delete';},3000);return;}
+  db.liveTx=db.liveTx.filter(function(t){return t._id!==x.dataset.td;});save();renderAll();});});
+ /* pie */
+ var contrib=db.payouts.reduce(function(s,p){return s+(+p.pie||0);},0);
+ document.getElementById('pie-contrib').textContent=money(contrib);
+ var pv=document.getElementById('pie-val');pv.value=(db.settings.pieValue!=null?db.settings.pieValue:contrib).toFixed(2);
+ var g=(db.settings.pieValue!=null?db.settings.pieValue:contrib)-contrib;
+ var pr='<div class="trow head"><div class="tc l">Sleeve</div><div class="tc">Ticker</div><div class="tc">%</div><div class="tc">Target \u00a3</div></div>';
+ var mv=db.settings.pieValue!=null?db.settings.pieValue:contrib;
+ db.pie.forEach(function(s){pr+='<div class="trow"><div class="tc l">'+s.sleeve+'</div><div class="tc">'+s.ticker+'</div><div class="tc">'+s.pct+'%</div><div class="tc">'+money(mv*s.pct/100)+'</div></div>';});
+ pr+='<div class="trow"><div class="tc l">Growth</div><div class="tc"></div><div class="tc"></div><div class="tc '+(g>=0?'pos':'neg')+'">'+money(g)+'</div></div>';
+ document.getElementById('pie-tbl').innerHTML=pr;
+
+ // ── Director's loan ledger: what the business owes you ──
+ (function(){
+   var host=document.getElementById('dirloan-card'); if(!host) return;
+   var explicitLoan=db.liveTx.filter(function(t){return t.dirLoan==='in';}).reduce(function(s,t){return s+Math.abs(+t.amount||0);},0);
+   // Kickstart = challenge fees paid from personal pocket = also money you're owed.
+   var kickstart=(db.settings.personalSpendOverride!=null?db.settings.personalSpendOverride:autoPersonalSpend());
+   if(kickstart<0)kickstart=0;
+   var loaned=explicitLoan+kickstart;              // total personal money in, all owed to you
+   // Money that repays YOU = explicit loan repayments + withdrawals (excluding business costs)
+   //   + the 10% pie split from payouts. Business-cost withdrawals are expenses, not repayment.
+   var repayTx=db.liveTx.filter(function(t){return (t.dirLoan==='repay'||t.type==='Withdrawal') && !t.bizCost;}).reduce(function(s,t){return s+Math.abs(+t.amount||0);},0);
+   // The 10% PERSONAL split of payouts goes to you personally \u2014 that repays your loan.
+   // (The 10% pie split is a business investment, separate from you, and is NOT repayment.)
+   var personalSplit=db.payouts.reduce(function(s,p){return s+(+p.personal||0);},0);
+   var returned=repayTx+personalSplit;
+   var repaid=Math.min(returned,loaned);           // portion that repaid the loan
+   var profit=Math.max(0,returned-loaned);         // beyond the loan = profit taken
+   var owed=Math.max(0,loaned-returned);
+   if(loaned===0 && returned===0){
+     host.innerHTML='<div class="card"><div class="note" style="margin:0">No personal money into the business yet. Challenge fees paid from your own pocket count as a loan automatically; record extra cash put in as \u201cDirector loan in\u201d. Withdrawals repay you automatically.</div></div>';
+     return;
+   }
+   host.innerHTML='<div class="grid">'+
+     stat('Outstanding',money(owed),owed>0?'business owes you':'fully repaid',owed>0?'amb':'pos')+
+     stat('Total in',money(loaned),'kickstart + loans')+
+     stat('Repaid to you',money(repaid),'via withdrawals','pos')+
+     stat('Reimbursement','',loaned>0?Math.round(repaid/loaned*100)+'% recovered':'\u2014')+
+   '</div>'+
+   '<div class="note">Kickstart '+money(kickstart)+' + loans '+money(explicitLoan)+' owed to you. Repaid by withdrawals ('+money(repayTx)+') + personal split ('+money(personalSplit)+'). Business-cost withdrawals and the pie split don\u2019t count.'+(profit>0?' '+money(profit)+' beyond the loan is profit taken.':'')+'</div>';
+ })();
+}
+document.getElementById('pie-val').addEventListener('change',function(){
+ db.settings.pieValue=parseFloat(this.value)||0;save();renderCapital();});
+
+/* ---- Sessions + Monthly ---- */
+// Read the filter's trade log (read-only) so the Log can auto-derive daily activity.
+function filterTrades(){
+  try{ var raw=localStorage.getItem('atm_trades'); if(!raw)return []; var d=JSON.parse(raw); return Array.isArray(d)?d:[]; }
+  catch(e){ return []; }
+}
+// Canonical predicates — MUST match the filter's _edgeCompleted / _edgeIsLogOnly exactly,
+// so tracker 'taken' stats equal the filter's live-taken stats.
+function trIsCompleted(t){
+  return t.outcome && t.status!=='open' && t.rr!==null && t.rr!==undefined && !isNaN(parseFloat(t.rr));
+}
+function trIsLogOnly(t){
+  return t.logOnly===true || t.filterVerdict==='BELOW' || t.filterVerdict==='AVOID';
+}
+// Live TAKEN = non-backtest, completed, not log-only (verdict-aware).
+function trTaken(list){
+  return list.filter(function(t){ return t.source!=='backtest' && trIsCompleted(t) && !trIsLogOnly(t); });
+}
+// Position-size multiplier — MUST match the filter: A+C=1.5, A+=1.25, A/blank=1.0, backtest=1.0.
+function trSizeMult(t){
+  if(t.source==='backtest') return 1.0;
+  var v=t.filterVerdict;
+  return v==='A+C'?1.5 : v==='A+'?1.25 : 1.0;
+}
+// SIZED R for a trade = rr × sizeMult (the real account return the filter reports).
+function trSizedR(t){ return (parseFloat(t.rr)||0) * trSizeMult(t); }
+// Datetime helper — matches the filter's _baseDT.
+function trBaseDT(d,tm){ if(!d)return null; var s=d+'T'+((tm||'00:00').slice(0,5)); var x=new Date(s); return isNaN(x)?null:x; }
+// Day-capped BASE counterfactual — MUST match the filter's dayCappedBaseSet exactly:
+// full live list incl. log-only, one-position-at-a-time, max 4 trades / stop after 2nd loss per day.
+function trBaseSet(list){
+  var live=list.filter(function(t){ return t.source!=='backtest' && trIsCompleted(t); });
+  var byDay={}; live.forEach(function(t){ (byDay[t.date]=byDay[t.date]||[]).push(t); });
+  var out=[];
+  Object.keys(byDay).forEach(function(d){
+    var day=byDay[d].slice().sort(function(a,b){ return String(a.time||'')<String(b.time||'')?-1:1; });
+    var n=0,losses=0,lastClose=null;
+    for(var i=0;i<day.length;i++){
+      var t=day[i];
+      var eDT=trBaseDT(t.date,t.time);
+      var cDT=trBaseDT(t.closeDate||t.date, t.closeTime||t.time);
+      if(cDT&&eDT&&cDT<eDT)cDT=eDT;
+      if(lastClose&&eDT&&eDT<lastClose)continue;
+      if(n>=4||losses>=2)break;
+      out.push(t); n++;
+      if(t.outcome==='LOSS')losses++;
+      if(cDT)lastClose=cDT;
+    }
+  });
+  return out;
+}
+// Per-day annotations live in db.dayNotes keyed by date string.
+function dayNote(date){ return (db.dayNotes||{})[date]||''; }
+function setDayNote(date,txt){ db.dayNotes=db.dayNotes||{}; if(txt)db.dayNotes[date]=txt; else delete db.dayNotes[date]; save(); }
+
+// Auto-derived daily log from actual trades: account summary + T-by-T breakdown.
+function renderDailyLog(){
+  var host=document.getElementById('daily-log'); if(!host) return;
+  var trades=filterTrades().filter(function(t){return t.date;});
+  if(!trades.length){ host.innerHTML='<div class="empty">No trades logged in the filter yet.</div>'; return; }
+  // group by date
+  var byDay={};
+  trades.forEach(function(t){ (byDay[t.date]=byDay[t.date]||[]).push(t); });
+  var days=Object.keys(byDay).sort(function(a,b){return a<b?1:-1;});
+  var acctIndex={};
+  db.accounts.forEach(function(a){ if(a.accountId) acctIndex[a.accountId]=a; });
+  var acctLabel=function(t){
+    if(t.isLiveAccount||t.account==='LIVE') return 'Live';
+    var firm=(t.accountFirm||'').replace('FundingPips','FP').replace('Aqua Funded','Aqua');
+    var stage=t.accountStage?(t.accountStage==='Funded'?'Funded':t.accountStage==='Challenge'?'Chal':t.accountStage):'';
+    // size: from the matched tracker account (trades don't store size directly)
+    var size='';
+    if(t.accountId && acctIndex[t.accountId]) size=acctIndex[t.accountId].size;
+    var bits=[];
+    if(firm) bits.push(firm);
+    if(stage) bits.push(stage);
+    if(size) bits.push(size);
+    if(bits.length){ return (t.accountId?t.accountId+' \u00b7 ':'')+bits.join(' \u00b7 '); }
+    if(t.account && t.account!=='MANUAL') return t.account;   // legacy P1/P2/FUNDED type
+    return 'unrecorded';
+  };
+  var outCls=function(o){return o==='WIN'?'pos':o==='LOSS'?'neg':'';};
+  host.innerHTML=days.slice(0,40).map(function(d){
+    var ts=byDay[d].slice().sort(function(a,b){return (a.time||'')<(b.time||'')?-1:1;});
+    // account summary: unique accounts with trade + loss counts
+    var accStats={};
+    ts.forEach(function(t){ var k=acctLabel(t); accStats[k]=accStats[k]||{n:0,l:0,taken:0};
+      accStats[k].n++; if(t.outcome==='LOSS'&&!trIsLogOnly(t))accStats[k].l++; if(!trIsLogOnly(t))accStats[k].taken++; });
+    var takenCount=ts.filter(function(t){return !trIsLogOnly(t);}).length;
+    var lossCount=ts.filter(function(t){return t.outcome==='LOSS'&&!trIsLogOnly(t);}).length;
+    var summary=Object.keys(accStats).map(function(k){
+      var s=accStats[k]; return '<span class="dacct">'+k+' <b>'+s.n+'</b>'+(s.l?' \u00b7 <span class="neg">'+s.l+'L</span>':'')+'</span>';
+    }).join('');
+    // T-by-T breakdown
+    var rows=ts.map(function(t,ti){
+      var seq='T'+(ti+1);   // position in the day's time-ordered trades = the T number
+      var isLO=trIsLogOnly(t);
+      var lo=isLO?'<span class="tlo">LOG ONLY</span>':'';
+      // log-only rr shown in brackets (didn't affect the account)
+      var rrRaw=(t.rr!=null)?((t.rr>=0?'+':'')+t.rr+'R'):'';
+      var rrPos=(t.rr!=null&&parseFloat(t.rr)>=0);
+      var rr=isLO?('('+rrRaw+')'):rrRaw;
+      // Size multiplier (verdict-based): show it so the sized result is visible, not just raw R.
+      var mult=trSizeMult(t);
+      var multTag = (!isLO && mult!==1) ? '<span class="tmult">\u00d7'+mult+'</span>' : '';
+      // Sized R = raw × mult, shown when a multiplier applies
+      var sizedVal = trSizedR(t);
+      var sizedTag = (!isLO && mult!==1 && t.rr!=null && Math.abs(parseFloat(t.rr))>0.001) ? '<span class="tsized '+(sizedVal>=0?'pos':'neg')+'">'+((sizedVal>=0?'+':'')+sizedVal.toFixed(2)+'R')+'</span>' : '';
+      return '<div class="trow-day'+(isLO?' lo-row':'')+'"><span class="tseq">'+seq+'</span>'+
+             '<span class="tacct">'+acctLabel(t)+'</span>'+
+             '<span class="tout '+outCls(t.outcome)+'">'+(t.outcome||'')+'</span>'+
+             multTag+
+             '<span class="trr '+(t.rr!=null?(rrPos?'pos':'neg'):'')+'">'+rr+'</span>'+sizedTag+lo+'</div>';
+    }).join('');
+    var note=dayNote(d);
+    return '<div class="card">'+
+      '<div class="c-top"><div class="c-id" style="font-size:12.5px">'+d+'</div>'+
+      '<div class="c-meta"><span><b>'+takenCount+'</b> taken</span><span><b class="'+(lossCount>=2?'neg':'')+'">'+lossCount+'</b> losses</span><span>'+ts.length+' logged</span></div></div>'+
+      '<div class="dsum">'+summary+'</div>'+
+      '<div class="tbreak">'+rows+'</div>'+
+      (note?'<div class="dnote-show">'+note+'</div>':'')+
+      '<div class="acts"><div class="mini" data-dn="'+d+'">'+(note?'Edit note':'Add note')+'</div></div>'+
+      '</div>';
+  }).join('');
+  host.querySelectorAll('[data-dn]').forEach(function(x){x.addEventListener('click',function(){dayNoteModal(x.dataset.dn);});});
+}
+function renderLogTrends(){
+  var host=document.getElementById('log-trends'); if(!host) return;
+  var all=filterTrades();
+  // Live TAKEN via the canonical predicate (verdict-aware, backtest excluded) — matches the filter.
+  var taken=trTaken(all).slice().sort(function(a,b){return ((a.date||'')+(a.time||''))<((b.date||'')+(b.time||''))?-1:1;});
+  if(taken.length<3){ host.innerHTML='<div class="chart-empty">Need a few more taken trades to show trends.</div>'; return; }
+  // Group by day for daily aggregates
+  var byDay={};
+  taken.forEach(function(t){ (byDay[t.date]=byDay[t.date]||[]).push(t); });
+  var days=Object.keys(byDay).sort();
+  // Daily net R series + cumulative
+  var dailyR=days.map(function(d){ return byDay[d].reduce(function(s,t){return s+trSizedR(t);},0); });
+  var cum=0, cumPts=days.map(function(d,i){ cum+=dailyR[i]; return {x:new Date(d+'T12:00').getTime(), y:cum}; });
+  // Win rate last 10 vs prior
+  function wr(list){ var w=list.filter(function(t){return t.outcome==='WIN';}).length; var l=list.filter(function(t){return t.outcome==='LOSS';}).length; return (w+l)?w/(w+l):null; }
+  var last10=taken.slice(-10), prev10=taken.slice(-20,-10);
+  var wrRecent=wr(last10), wrPrev=wr(prev10);
+  // Avg trades/day + days hitting 2-loss stop
+  var avgPerDay=(taken.length/days.length);
+  var stopDays=days.filter(function(d){ return byDay[d].filter(function(t){return t.outcome==='LOSS';}).length>=2; }).length;
+  // net R + recent direction
+  var netR=taken.reduce(function(s,t){return s+trSizedR(t);},0);
+  var last5R=taken.slice(-5).reduce(function(s,t){return s+trSizedR(t);},0);
+  var prev5R=taken.slice(-10,-5).reduce(function(s,t){return s+trSizedR(t);},0);
+  // Base counterfactual (flat, day-capped, incl log-only) — matches filter LIVE BASE.
+  var baseSet=trBaseSet(all);
+  var baseN=baseSet.length;
+  var baseR=baseSet.reduce(function(s,t){return s+(+t.rr||0);},0);
+
+  // ── Cumulative R chart (green line, zero baseline) ──
+  var chartHtml='<div class="chart-card"><div class="chart-title">Cumulative R \u00b7 taken (sized)</div><div class="chart-sub">Position-sized daily net R \u2014 matches filter</div><div id="log-r-chart"></div></div>';
+  host.innerHTML=chartHtml+'<div class="verdict-box" id="log-verdict"></div>';
+  // draw with existing lineChart (money formatter would show £; use count variant styled for R)
+  lineChartR('log-r-chart', cumPts);
+
+  // ── Verdict lines ──
+  var lines=[];
+  function L(sev,ico,html){lines.push('<div class="vd-line '+sev+'"><span class="vd-ico">'+ico+'</span>'+html+'</div>');}
+  // 1. Net R standing
+  var sizedSev=netR>0?'good':'bad', sizedIco=netR>0?'\u2713':'\u2715';
+  L(sizedSev,sizedIco,'<b>Actual (sized): '+(netR>=0?'+':'')+netR.toFixed(2)+'R</b> over N='+taken.length+' taken. <b>Base (flat): '+(baseR>=0?'+':'')+baseR.toFixed(2)+'R</b> over N='+baseN+'. '+
+    (netR>baseR?'Sizing is adding to the flat base \u2014 discretionary size has helped.':netR<baseR?'Sizing is costing vs the flat base \u2014 larger positions have landed on weaker trades.':'Sizing is neutral vs base.'));
+  // 2. Recent direction (last 5 vs prior 5)
+  if(taken.length>=10){
+    if(last5R>prev5R+0.5) L('good','\u2197','<b>Recent 5 trades +'+last5R.toFixed(1)+'R</b> vs prior 5 '+ (prev5R>=0?'+':'')+prev5R.toFixed(1)+'R \u2014 momentum improving.');
+    else if(last5R<prev5R-0.5) L('warn','\u2198','<b>Recent 5 trades '+last5R.toFixed(1)+'R</b> vs prior 5 '+(prev5R>=0?'+':'')+prev5R.toFixed(1)+'R \u2014 cooling off.');
+    else L('warn','\u2192','<b>Recent 5 flat</b> ('+last5R.toFixed(1)+'R vs '+prev5R.toFixed(1)+'R) \u2014 range-bound.');
+  }
+  // 3. Win rate trend
+  if(wrRecent!=null&&wrPrev!=null){
+    var dwr=(wrRecent-wrPrev)*100;
+    if(dwr>5) L('good','\u2713','<b>Win rate '+Math.round(wrRecent*100)+'%</b> last 10, up from '+Math.round(wrPrev*100)+'% \u2014 strike rate improving.');
+    else if(dwr<-5) L('warn','\u25B3','<b>Win rate '+Math.round(wrRecent*100)+'%</b> last 10, down from '+Math.round(wrPrev*100)+'%.');
+    else L('warn','\u2192','<b>Win rate steady ~'+Math.round(wrRecent*100)+'%</b> \u2014 consistent with your model\u2019s trend-following profile.');
+  }
+  // 4. Discipline: trades/day + stop-out days
+  var disc = avgPerDay<=4 ? 'good' : 'warn';
+  L(disc, disc==='good'?'\u2713':'\u25B3', '<b>'+avgPerDay.toFixed(1)+' taken trades/day</b> average'+(avgPerDay>4?' \u2014 above the 4-trade guide, watch for overtrading.':', within the 4-trade guide.')+' '+stopDays+' of '+days.length+' days hit the 2-loss stop.');
+  document.getElementById('log-verdict').innerHTML=lines.join('');
+
+  // ── Day-type frequency: TWO independent dimensions, not conflated ──
+  //   (A) OUTCOME  — how the day turned out in sized R: green / red / breakeven
+  //   (B) ENDING   — how the day ended: hit the 2-loss stop, or ran its natural course
+  // A 2-loss-stop day CAN still be green (two small losses + a bigger win), so these are separate.
+  var allDaysMap={};
+  all.filter(function(t){return t.date && t.source!=='backtest' && trIsCompleted(t);})
+     .forEach(function(t){ (allDaysMap[t.date]=allDaysMap[t.date]||[]).push(t); });
+  var out={green:0,red:0,be:0}, ending={stop:0,natural:0}, noTake=0;
+  var stopGreen=0, stopTotal=0;
+  Object.keys(allDaysMap).forEach(function(d){
+    var tk=allDaysMap[d].filter(function(t){return !trIsLogOnly(t);});
+    if(tk.length===0){ noTake++; return; }
+    var losses=tk.filter(function(t){return t.outcome==='LOSS';}).length;
+    var sr=tk.reduce(function(s,t){return s+trSizedR(t);},0);
+    var o = sr>0.001?'green':sr<-0.001?'red':'be';
+    out[o]++;
+    var stopped = losses>=2;
+    ending[stopped?'stop':'natural']++;
+    if(stopped){ stopTotal++; if(o==='green')stopGreen++; }
+  });
+  var takenDays=out.green+out.red+out.be;
+  var totalDays=takenDays+noTake;
+  var dtHost=document.getElementById('log-daytypes');
+  if(dtHost && takenDays){
+    function bar(label,desc,col,c,denom){
+      var pct=denom?Math.round(c/denom*100):0;
+      return '<div class="dt-row"><span class="dt-dot" style="background:'+col+'"></span>'+
+        '<span class="dt-label">'+label+'<span class="dt-desc"> \u00b7 '+desc+'</span></span>'+
+        '<span class="dt-bar"><span class="dt-fill" style="width:'+pct+'%;background:'+col+'"></span></span>'+
+        '<span class="dt-val"><b>'+c+'</b> \u00b7 '+pct+'%</span></div>';
+    }
+    var greenPct=Math.round(out.green/takenDays*100);
+    var redPct=Math.round(out.red/takenDays*100);
+    var html='<div class="dt-head">Over '+takenDays+' days you took trades: <b>'+greenPct+'% finished green</b>, <b>'+redPct+'% red</b> (in sized R).</div>';
+    // Dimension A — outcome
+    html+='<div class="dt-sub">How the day finished</div>';
+    html+=bar('Green','net positive sized R',CSS_GREEN,out.green,takenDays);
+    html+=bar('Red','net negative',('#FF453A'),out.red,takenDays);
+    if(out.be) html+=bar('Breakeven','flat',CSS_TXT,out.be,takenDays);
+    // Dimension B — how it ended
+    html+='<div class="dt-sub">How the day ended</div>';
+    html+=bar('Hit 2-loss stop','stopped early \u2014 can still be green',('#FF9F0A'),ending.stop,takenDays);
+    html+=bar('Ran naturally','\u2264 1 loss, played out',('#0A84FF'),ending.natural,takenDays);
+    // The cross-insight you flagged
+    if(stopTotal){
+      var sgPct=Math.round(stopGreen/stopTotal*100);
+      html+='<div class="dt-note">Of '+stopTotal+' two-loss-stop days, <b>'+stopGreen+' ('+sgPct+'%) still finished green</b> \u2014 hitting the stop doesn\u2019t mean a losing day.</div>';
+    }
+    if(noTake) html+='<div class="dt-note">Plus '+noTake+' log-only day'+(noTake>1?'s':'')+' (nothing taken).</div>';
+    dtHost.innerHTML=html;
+  } else if(dtHost){ dtHost.innerHTML='<div class="chart-empty">No active days yet.</div>'; }
+
+  // ── Average winning / losing DAY, lifetime vs recent (last 20 active days) ──
+  // Build a chronological list of daily sized-R for days with taken trades.
+  var dayList=Object.keys(allDaysMap).sort().map(function(d){
+    var tk=allDaysMap[d].filter(function(t){return !trIsLogOnly(t);});
+    if(!tk.length) return null;
+    return {date:d, r:tk.reduce(function(s,t){return s+trSizedR(t);},0)};
+  }).filter(Boolean);
+  function avgWinLoss(list){
+    var w=list.filter(function(x){return x.r>0.001;}), l=list.filter(function(x){return x.r<-0.001;});
+    var wa=w.length? w.reduce(function(s,x){return s+x.r;},0)/w.length : null;
+    var la=l.length? l.reduce(function(s,x){return s+x.r;},0)/l.length : null;
+    var exp=list.length? list.reduce(function(s,x){return s+x.r;},0)/list.length : null;
+    return {winAvg:wa, winN:w.length, lossAvg:la, lossN:l.length, exp:exp, n:list.length};
+  }
+  var life=avgWinLoss(dayList);
+  var recent=avgWinLoss(dayList.slice(-20));
+  var avHost=document.getElementById('log-avgday');
+  if(avHost && dayList.length){
+    function rr(v){ return v==null?'\u2014':((v>=0?'+':'')+v.toFixed(2)+'R'); }
+    // drift arrow: compare recent vs lifetime
+    function drift(rv,lv,goodUp){
+      if(rv==null||lv==null) return '';
+      var d=rv-lv; if(Math.abs(d)<0.05) return '<span class="av-flat">\u2192</span>';
+      var better = goodUp ? d>0 : d<0;
+      return '<span class="'+(better?'av-up':'av-down')+'">'+(d>0?'\u2197':'\u2198')+'</span>';
+    }
+    var html=''+
+     '<div class="av-grid">'+
+       '<div class="av-col av-head"></div><div class="av-col av-head">Lifetime</div><div class="av-col av-head">Last 20d</div>'+
+       '<div class="av-col av-lbl">Avg winning day</div>'+
+         '<div class="av-col av-val pos">'+rr(life.winAvg)+'<span class="av-n">'+life.winN+'d</span></div>'+
+         '<div class="av-col av-val pos">'+rr(recent.winAvg)+' '+drift(recent.winAvg,life.winAvg,true)+'<span class="av-n">'+recent.winN+'d</span></div>'+
+       '<div class="av-col av-lbl">Avg losing day</div>'+
+         '<div class="av-col av-val neg">'+rr(life.lossAvg)+'<span class="av-n">'+life.lossN+'d</span></div>'+
+         '<div class="av-col av-val neg">'+rr(recent.lossAvg)+' '+drift(recent.lossAvg,life.lossAvg,false)+'<span class="av-n">'+recent.lossN+'d</span></div>'+
+       '<div class="av-col av-lbl">Expectancy / day</div>'+
+         '<div class="av-col av-val '+(life.exp>=0?'pos':'neg')+'">'+rr(life.exp)+'</div>'+
+         '<div class="av-col av-val '+(recent.exp>=0?'pos':'neg')+'">'+rr(recent.exp)+' '+drift(recent.exp,life.exp,true)+'</div>'+
+     '</div>';
+    avHost.innerHTML=html;
+  } else if(avHost){ avHost.innerHTML='<div class="chart-empty">No active days yet.</div>'; }
+}
+// R-axis line chart (no £ formatting; zero baseline; green with red-below fill)
+function lineChartR(host, pts){
+  var el=document.getElementById(host); if(!el) return;
+  if(!pts || pts.length<2){ el.innerHTML='<div class="chart-empty">Not enough data.</div>'; return; }
+  var W=340,H=160, pad={l:34,r:10,t:10,b:22};
+  var xs=pts.map(function(p){return p.x;}), ys=pts.map(function(p){return p.y;});
+  var xmin=Math.min.apply(null,xs),xmax=Math.max.apply(null,xs);
+  var ymin=Math.min(0,Math.min.apply(null,ys)), ymax=Math.max(1,Math.max.apply(null,ys));
+  if(xmax===xmin){xmin-=86400000;xmax+=86400000;}
+  var pdR=(ymax-ymin)*0.1; ymax+=pdR; ymin-=pdR;
+  function X(x){return pad.l+(x-xmin)/(xmax-xmin)*(W-pad.l-pad.r);}
+  function Y(y){return H-pad.b-(y-ymin)/(ymax-ymin)*(H-pad.t-pad.b);}
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="none" style="display:block">';
+  for(var g=0;g<=4;g++){var yv=ymin+(ymax-ymin)*g/4;var yy=Y(yv);
+    svg+='<line x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'" stroke="rgba(255,255,255,0.07)"/>';
+    svg+='<text x="'+(pad.l-5)+'" y="'+(yy+3)+'" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.5)">'+yv.toFixed(0)+'R</text>';}
+  // zero line emphasised
+  var yz=Y(0); svg+='<line x1="'+pad.l+'" y1="'+yz+'" x2="'+(W-pad.r)+'" y2="'+yz+'" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>';
+  var d=pts.map(function(p,i){return (i?'L':'M')+X(p.x).toFixed(1)+' '+Y(p.y).toFixed(1);}).join(' ');
+  var lastY=pts[pts.length-1].y, col=lastY>=0?'#30D158':'#FF453A';
+  var area=d+' L'+X(pts[pts.length-1].x).toFixed(1)+' '+yz+' L'+X(pts[0].x).toFixed(1)+' '+yz+' Z';
+  svg+='<path d="'+area+'" fill="'+col+'" opacity="0.12"/>';
+  svg+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>';
+  svg+='<circle cx="'+X(pts[pts.length-1].x)+'" cy="'+Y(lastY)+'" r="3" fill="'+col+'"/>';
+  svg+='</svg>'; el.innerHTML=svg;
+}
+function dayNoteModal(date){
+  openM('<div class="m-h">Note \u2014 '+date+'</div>'+
+    fld('m-dnote','Annotation','text',dayNote(date),'e.g. carried T3\u2013T4 to next day, choppy open\u2026')+
+    '<div class="m-acts"><button class="btn btn-cancel" id="m-cancel">Cancel</button><button class="btn btn-save" id="m-save">Save</button></div>');
+  document.getElementById('m-cancel').addEventListener('click',closeM);
+  document.getElementById('m-save').addEventListener('click',function(){ setDayNote(date,gv('m-dnote')); closeM(); renderDailyLog(); });
+}
+
+function wireLogCollapser(){
+  var c=document.getElementById('sess-collapser'), body=document.getElementById('sess-body'), arrow=document.getElementById('sess-arrow');
+  if(c && !c._wired){ c._wired=true;
+    c.addEventListener('click',function(){
+      var open=body.style.display!=='none';
+      body.style.display=open?'none':'block';
+      arrow.classList.toggle('open',!open);
+    });
+  }
+  var e2=document.getElementById('exp-btn2');
+  if(e2 && !e2._wired){ e2._wired=true; e2.addEventListener('click',function(){ var orig=document.getElementById('exp-btn'); if(orig)orig.click(); }); }
+}
+function renderSessions(){
+ wireLogCollapser();
+ var el=document.getElementById('sess-list');
+ var L=db.sessions.slice().sort(function(a,b){return a.date<b.date?1:-1;});
+ el.innerHTML=L.length?L.slice(0,30).map(function(s){
+  return '<div class="card"><div class="c-top"><div class="c-id" style="font-size:12.5px">'+s.date+'</div><div class="c-meta"><span><b>'+(s.trades||0)+'</b> trades</span><span><b class="'+((+s.losses||0)>=2?'neg':'')+'">'+(s.losses||0)+'</b> losses</span></div></div>'+
+  '<div class="c-meta">'+(s.accounts&&s.accounts.length?s.accounts.join(' \u00b7 '):'no accounts marked')+'</div>'+
+  (s.notes?'<div class="note" style="margin:5px 0 0">'+s.notes+'</div>':'')+
+  '<div class="acts"><div class="mini" data-se="'+s._id+'">Edit</div><div class="mini del" data-sd="'+s._id+'">Delete</div></div></div>';}).join(''):'<div class="empty">No sessions logged.</div>';
+ el.querySelectorAll('[data-se]').forEach(function(x){x.addEventListener('click',function(){sessModal(x.dataset.se);});});
+ el.querySelectorAll('[data-sd]').forEach(function(x){x.addEventListener('click',function(){
+  if(x.textContent!=='Confirm?'){x.textContent='Confirm?';setTimeout(function(){x.textContent='Delete';},3000);return;}
+  db.sessions=db.sessions.filter(function(s){return s._id!==x.dataset.sd;});save();renderAll();});});
+}
+function monthOf(d){return (d||'').slice(0,7);}
+function renderMonthly(){
+ var months={};
+ function M(m){if(!months[m])months[m]={pay:0,fees:0,passed:0,failed:0,sessions:0,losses:0,trades:0};return months[m];}
+ db.payouts.forEach(function(p){if(p.date)M(monthOf(p.date)).pay+=(+p.gross||0);});
+ db.accounts.forEach(function(a){
+  if(a.registerDate&&+a.fee)M(monthOf(a.registerDate)).fees+=(+a.fee||0);
+  var cd=a.dateCompleted||a.registerDate;
+  if(!cd) return;
+  // Don't double-count linked phase chains: a passed P1/P2 that's part of a chain (links forward
+  // to an existing account or has a child linking back) is a transition, not a standalone pass.
+  var linkedFwd = a.linkedAcct && db.accounts.some(function(b){ return b.accountId===a.linkedAcct && b._id!==a._id; });
+  var linkedBack = db.accounts.some(function(b){ return b.linkedAcct===a.accountId && b._id!==a._id; });
+  var isTransition = a.status==='Passed' && a.stage!=='Funded' && (linkedFwd||linkedBack);
+  if(a.status==='Passed' && !isTransition) M(monthOf(cd)).passed++;
+  if(a.status==='Failed'||a.status==='Breached') M(monthOf(cd)).failed++;});
+ db.sessions.forEach(function(s){if(s.date){var m=M(monthOf(s.date));m.sessions++;m.losses+=(+s.losses||0);m.trades+=(+s.trades||0);}});
+ var keys=Object.keys(months).sort();
+ var rows='<div class="trow head"><div class="tc l">Month</div><div class="tc">Pay \u00a3</div><div class="tc">Fees \u00a3</div><div class="tc">Net \u00a3</div><div class="tc">P/F</div><div class="tc">Sess</div></div>';
+ keys.forEach(function(k){var m=months[k],net=m.pay-m.fees;
+  rows+='<div class="trow"><div class="tc l">'+k+'</div><div class="tc pos">'+Math.round(m.pay)+'</div><div class="tc">'+Math.round(m.fees)+'</div><div class="tc '+(net>=0?'pos':'neg')+'">'+Math.round(net)+'</div><div class="tc">'+m.passed+'/'+m.failed+'</div><div class="tc">'+m.sessions+'</div></div>';});
+ document.getElementById('month-tbl').innerHTML=rows||'<div class="empty">No data yet.</div>';
+}
+
+/* ---- Modals ---- */
+var mb=document.getElementById('modal-bg'),mbody=document.getElementById('modal-body');
+function openM(html){mbody.innerHTML=html;mb.classList.add('show');}
+function closeM(){mb.classList.remove('show');}
+mb.addEventListener('click',function(e){if(e.target===mb)closeM();});
+function fld(id,lbl,type,val,ph){return '<div class="field"><label>'+lbl+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+(val!=null?String(val).replace(/"/g,'&quot;'):'')+'" placeholder="'+(ph||'')+'" '+(type==='number'?'inputmode="decimal"':'')+'></div>';}
+function segH(id,opts,sel){return '<div class="field"><label>'+id.replace('sg-','')+'</label><div class="seg" id="'+id+'">'+opts.map(function(o){return '<div class="seg-opt'+(o===sel?' sel':'')+'" data-v="'+o+'">'+o+'</div>';}).join('')+'</div></div>';}
+function wireSeg(id){var el=document.getElementById(id);el.querySelectorAll('.seg-opt').forEach(function(o){o.addEventListener('click',function(){el.querySelectorAll('.seg-opt').forEach(function(x){x.classList.remove('sel');});o.classList.add('sel');});});}
+function segVal(id){var s=document.getElementById(id).querySelector('.sel');return s?s.dataset.v:'';}
+function gv(id){return document.getElementById(id).value.trim();}
+
+function acctModal(id){
+ var a=id?db.accounts.find(function(x){return x._id===id;}):null;
+ var canAdvance = a && (a.stage==='Phase 1'||a.stage==='Phase 2') && a.status!=='Passed';
+ openM('<div class="m-h">'+(a?'Edit':'Add')+' account</div>'+
+  fld('m-id','Account ID','text',a?a.accountId:'','#12345678')+
+  segH('sg-firm',['FundingPips','Aqua Funded'],a?(a.firm||'FundingPips'):'FundingPips')+
+  fld('m-reg','Register date','date',a?a.registerDate:today())+
+  segH('sg-size',SIZES,a?a.size:'5K')+segH('sg-stage',STAGES,a?a.stage:'Phase 1')+segH('sg-status',STATUSES,a?a.status:'Active')+
+  '<div class="frow">'+fld('m-bal','Current balance \u00a3','number',a?a.currentBalance:'')+fld('m-fee','Fee \u00a3','number',a?a.fee:'')+'</div>'+
+  '<div class="frow">'+fld('m-payout','Payout \u00a3','number',a?a.payout:'')+fld('m-refund','Refund \u00a3','number',a?a.refund:'')+'</div>'+
+  '<div class="frow">'+fld('m-ds','Date started','date',a?a.dateStarted:'')+fld('m-dc','Date completed','date',a?a.dateCompleted:'')+'</div>'+
+  fld('m-link','Linked acct','text',a?a.linkedAcct:'')+fld('m-notes','Notes','text',a?a.notes:'')+
+  (canAdvance?'<button class="btn btn-save" id="m-advance" style="width:100%;margin-bottom:10px;background:rgba(48,209,88,0.15);color:var(--green)">Mark passed &rarr; create '+(a.stage==='Phase 1'?'Phase 2':'Funded')+' account</button>':'')+
+  '<div class="m-acts"><button class="btn btn-cancel" id="m-cancel">Cancel</button><button class="btn btn-save" id="m-save">Save</button></div>');
+ ['sg-firm','sg-size','sg-stage','sg-status'].forEach(wireSeg);
+ document.getElementById('m-cancel').addEventListener('click',closeM);
+ if(canAdvance){ document.getElementById('m-advance').addEventListener('click',function(){ advancePhase(a); }); }
+ document.getElementById('m-save').addEventListener('click',function(){
+  var st=segVal('sg-status');
+  var keepPark=a&&(a.rotState==='Dormant'||a.rotState==='Final swing');
+  var rot=(st==='Active'||st==='Funded Active')?(keepPark?a.rotState:'In rotation'):'Out';
+  var rec={accountId:gv('m-id'),firm:segVal('sg-firm'),registerDate:gv('m-reg'),size:segVal('sg-size'),stage:segVal('sg-stage'),status:st,
+   rotState:rot,inRotation:(rot==='In rotation'),currentBalance:gv('m-bal'),fee:parseFloat(gv('m-fee'))||0,payout:parseFloat(gv('m-payout'))||0,refund:parseFloat(gv('m-refund'))||0,
+   dateStarted:gv('m-ds'),dateCompleted:gv('m-dc'),linkedAcct:gv('m-link'),notes:gv('m-notes')};
+  if(a){Object.keys(rec).forEach(function(k){a[k]=rec[k];});}else{rec._id=uid('a');db.accounts.push(rec);}
+  save();closeM();renderAll();});
+}
+// Phase transition: mark current stage Passed, spawn a NEW linked next-stage account (asks for new ID).
+function advancePhase(a){
+ var nextStage = a.stage==='Phase 1' ? 'Phase 2' : 'Funded';
+ var nextStatus = nextStage==='Funded' ? 'Funded Active' : 'Active';
+ // Open a full details window for the new stage account, prefilled from parent, auto-linked.
+ openM('<div class="m-h">'+a.stage+' passed \u2192 new '+nextStage+' account</div>'+
+  '<div class="note" style="margin:0 0 10px">Linked to '+(a.accountId||'parent')+'. Fill the new account\u2019s details.</div>'+
+  fld('ap-id','New '+nextStage+' account ID','text','','#12345678')+
+  segH('ap-firm',['FundingPips','Aqua Funded'],a.firm||'FundingPips')+
+  segH('ap-size',SIZES,a.size)+
+  fld('ap-reg','Register date','date',today())+
+  '<div class="frow">'+fld('ap-bal','Starting balance \u00a3','number','')+fld('ap-fee','Fee \u00a3','number','')+'</div>'+
+  '<div class="m-acts"><button class="btn btn-cancel" id="ap-cancel">Cancel</button><button class="btn btn-save" id="ap-save">Create linked '+nextStage+'</button></div>');
+ ['ap-firm','ap-size'].forEach(wireSeg);
+ document.getElementById('ap-cancel').addEventListener('click',closeM);
+ document.getElementById('ap-save').addEventListener('click',function(){
+  // Mark parent passed and out of rotation
+  a.status='Passed'; a.dateCompleted=a.dateCompleted||today(); a.rotState='Out'; a.inRotation=false;
+  var child={_id:uid('a'),accountId:gv('ap-id').trim(),firm:segVal('ap-firm'),registerDate:gv('ap-reg')||today(),
+    size:segVal('ap-size'),stage:nextStage,status:nextStatus,
+    rotState:'In rotation',inRotation:true,currentBalance:gv('ap-bal'),
+    fee:parseFloat(gv('ap-fee'))||0,payout:0,refund:0,
+    dateStarted:today(),dateCompleted:'',linkedAcct:a.accountId||'',
+    notes:'Advanced from '+a.stage+' '+(a.accountId||'')};
+  db.accounts.push(child);
+  save(); closeM(); renderAll();
+ });
+}
+function payoutModal(id){
+ var p=id?db.payouts.find(function(x){return x._id===id;}):null;
+ var fundeds=db.accounts.filter(function(a){return a.stage==='Funded';});
+ var acctOpts='<option value="">\u2014 select funded account \u2014</option>'+
+   fundeds.map(function(a){return '<option value="'+a._id+'"'+(p&&p.accountId===(a.accountId||'')?' selected':'')+'>'+(a.accountId||'(no id)')+' \u00b7 '+a.size+' '+(a.firm||'').replace('Funding','FP').replace(' Funded',' Aqua')+'</option>';}).join('')+
+   '<option value="__other">Other / manual\u2026</option>';
+ openM('<div class="m-h">'+(p?'Edit':'Add')+' payout</div>'+
+  fld('m-pd','Date','date',p?p.date:today())+
+  '<div class="field"><label>Funded account</label><select id="m-psel" class="calcish">'+acctOpts+'</select></div>'+
+  '<div id="m-pa-wrap" style="display:'+(p&&p.accountId&&!fundeds.some(function(a){return (a.accountId||'')===p.accountId;})?'block':'none')+'">'+fld('m-pa','Account ID (manual)','text',p?p.accountId:'','#...')+'</div>'+
+  '<div class="frow">'+fld('m-psz','Size','text',p?p.size:'')+fld('m-pg','Gross \u00a3','number',p?p.gross:'')+'</div>'+
+  '<div class="frow">'+fld('m-pl','\u2192 Live \u00a3','number',p?p.live:'')+fld('m-pp','\u2192 Pie \u00a3','number',p?p.pie:'')+'</div>'+
+  fld('m-pper','\u2192 Personal \u00a3','number',p?p.personal:'')+fld('m-pn','Notes','text',p?p.notes:'')+
+  '<div class="note">Splits auto-fill 80/10/10 as you type gross \u2014 edit any split to override.</div>'+
+  '<div class="m-acts"><button class="btn btn-cancel" id="m-cancel">Cancel</button><button class="btn btn-save" id="m-save">Save</button></div>');
+ var selEl=document.getElementById('m-psel');
+ if(selEl){selEl.addEventListener('change',function(){
+   var v=selEl.value;
+   document.getElementById('m-pa-wrap').style.display=(v==='__other')?'block':'none';
+   if(v&&v!=='__other'){var a=db.accounts.find(function(q){return q._id===v;});
+     if(a){document.getElementById('m-psz').value=a.size;}}
+ });}
+ // Live 80/10/10 auto-fill from gross. Tracks whether each split was manually edited;
+ // once a user types in a split, that field stops auto-updating (their override wins).
+ var gEl=document.getElementById('m-pg'),
+     lEl=document.getElementById('m-pl'), piEl=document.getElementById('m-pp'), peEl=document.getElementById('m-pper');
+ var edited={live:false,pie:false,personal:false};
+ function fillSplits(){
+   var g=parseFloat(gEl.value)||0;
+   if(!edited.live) lEl.value = g? +(g*0.8).toFixed(2) : '';
+   if(!edited.pie) piEl.value = g? +(g*0.1).toFixed(2) : '';
+   if(!edited.personal) peEl.value = g? +(g*0.1).toFixed(2) : '';
+ }
+ gEl.addEventListener('input',fillSplits);
+ lEl.addEventListener('input',function(){edited.live=true;});
+ piEl.addEventListener('input',function(){edited.pie=true;});
+ peEl.addEventListener('input',function(){edited.personal=true;});
+ // If editing an existing payout, only treat a split as a manual override when it is a
+ // real non-zero value that differs from the 80/10/10 default. Zero/blank splits still auto-fill.
+ if(p){ var g0=+p.gross||0;
+   if(g0){ if((+p.live||0)>0 && Math.abs((+p.live||0)-g0*0.8)>0.01)edited.live=true;
+           if((+p.pie||0)>0 && Math.abs((+p.pie||0)-g0*0.1)>0.01)edited.pie=true;
+           if((+p.personal||0)>0 && Math.abs((+p.personal||0)-g0*0.1)>0.01)edited.personal=true; }
+   // fill any split that is currently blank/zero from the existing gross
+   fillSplits();
+ }
+ else { fillSplits(); }
+ document.getElementById('m-cancel').addEventListener('click',closeM);
+ document.getElementById('m-save').addEventListener('click',function(){
+  var g=parseFloat(gv('m-pg'))||0;
+  var lv=gv('m-pl')===''?g*0.8:parseFloat(gv('m-pl'))||0;
+  var pi=gv('m-pp')===''?g*0.1:parseFloat(gv('m-pp'))||0;
+  var pe=gv('m-pper')===''?g*0.1:parseFloat(gv('m-pper'))||0;
+  var selV=document.getElementById('m-psel')?document.getElementById('m-psel').value:'';
+  var acctId=gv('m-pa'), firm='';
+  if(selV&&selV!=='__other'){var sa=db.accounts.find(function(q){return q._id===selV;});
+    if(sa){acctId=sa.accountId||'';firm=sa.firm||'';}}
+  var rec={date:gv('m-pd'),accountId:acctId,firm:firm,size:(gv('m-psz')||'').toUpperCase(),gross:g,live:+lv.toFixed(2),pie:+pi.toFixed(2),personal:+pe.toFixed(2),notes:gv('m-pn')};
+  if(p){Object.keys(rec).forEach(function(k){p[k]=rec[k];});}else{rec._id=uid('p');db.payouts.push(rec);}
+  save();closeM();renderAll();});
+}
+function txModal(id){
+ var t=id?db.liveTx.find(function(x){return x._id===id;}):null;
+ openM('<div class="m-h">'+(t?'Edit':'Add')+' live transaction</div>'+
+  fld('m-td','Date','date',t?t.date:today())+
+  segH('sg-tt',['Direct Deposit','Withdrawal','Business cost','Challenge Purchase','Trade P&L','Director loan in','Loan repayment'],t?t.type:'Direct Deposit')+
+  fld('m-ta','Amount \u00a3','number',t?(t.amount<0?Math.abs(t.amount):t.amount):'','always enter positive')+fld('m-tr','Ref / notes','text',t?t.ref:'')+
+  '<div class="note" id="tx-hint" style="margin-top:4px"></div>'+
+  '<div class="m-acts"><button class="btn btn-cancel" id="m-cancel">Cancel</button><button class="btn btn-save" id="m-save">Save</button></div>');
+ wireSeg('sg-tt');
+ function txHint(){
+   var ty=segVal('sg-tt'); var h='';
+   if(ty==='Director loan in') h='Personal money into the business \u2014 adds to what the business owes you.';
+   else if(ty==='Loan repayment') h='Business pays you back \u2014 reduces the loan owed to you.';
+   else if(ty==='Withdrawal') h='Money taken from live to you \u2014 repays your loan (then profit once cleared).';
+   else if(ty==='Business cost') h='Operating cost paid from live \u2014 a business expense, does NOT repay your loan.';
+   else if(ty==='Challenge Purchase') h='Challenge fee paid from the live account.';
+   else if(ty==='Direct Deposit') h='External money added to the live account (not a loan).';
+   else h='Trading result on the live account.';
+   var el=document.getElementById('tx-hint'); if(el)el.textContent=h;
+ }
+ document.querySelectorAll('#sg-tt .seg-opt').forEach(function(o){o.addEventListener('click',txHint);});
+ txHint();
+ document.getElementById('m-cancel').addEventListener('click',closeM);
+ document.getElementById('m-save').addEventListener('click',function(){
+  var ty=segVal('sg-tt'); var amt=Math.abs(parseFloat(gv('m-ta'))||0);
+  var rec={date:gv('m-td'),type:ty,ref:gv('m-tr')};
+  // Sign + director-loan tagging:
+  //  Withdrawal / Challenge Purchase / Loan repayment = money OUT of live account (negative)
+  //  Director loan in = personal money INTO the business (positive to live balance)
+  //  Loan repayment = business paying you back (out of live, reduces what you're owed)
+  if(ty==='Withdrawal'||ty==='Challenge Purchase'||ty==='Loan repayment'||ty==='Business cost'){ rec.amount=-amt; }
+  else { rec.amount=amt; }
+  // Director-loan ledger flags
+  if(ty==='Director loan in'){ rec.dirLoan='in'; }          // business now owes you +amt
+  else if(ty==='Loan repayment'){ rec.dirLoan='repay'; }    // business repays you -amt from what it owes
+  else if(ty==='Business cost'){ rec.bizCost=true; }         // operating cost — NOT a repayment
+  if(t){ // clear any stale dirLoan when type changes away
+    if(!rec.dirLoan) delete t.dirLoan;
+    Object.keys(rec).forEach(function(k){t[k]=rec[k];});
+    if(!rec.dirLoan)delete t.dirLoan;
+  } else { rec._id=uid('t'); db.liveTx.push(rec); }
+  save();closeM();renderAll();});
+}
+function sessModal(id){
+ var s=id?db.sessions.find(function(x){return x._id===id;}):null;
+ var picked=(s&&s.accounts)?s.accounts.slice():[];
+ // Tappable chips from active accounts (+ Live) — no comma typing.
+ var opts=[{id:'LIVE',label:'Live'}];
+ db.accounts.filter(function(a){return a.status==='Active'||a.status==='Funded Active';})
+  .sort(function(a,b){return sizeNum(b.size)-sizeNum(a.size);})
+  .forEach(function(a){opts.push({id:a.accountId||a._id,label:(a.accountId||a.size)+' \u00b7 '+a.size});});
+ // include any previously-saved ids no longer active so edit keeps them
+ picked.forEach(function(pid){if(!opts.some(function(o){return o.id===pid;}))opts.push({id:pid,label:pid});});
+ var chipsHtml=opts.map(function(o){return '<div class="sess-chip'+(picked.indexOf(o.id)>=0?' on':'')+'" data-aid="'+o.id+'">'+o.label+'</div>';}).join('');
+ openM('<div class="m-h">'+(s?'Edit':'Add')+' session</div>'+
+  fld('m-sd','Date','date',s?s.date:today())+
+  '<div class="field"><label>Accounts traded (tap to toggle)</label><div class="sess-chips" id="sess-chips">'+chipsHtml+'</div></div>'+
+  '<div class="frow">'+fld('m-st','Trades','number',s?s.trades:'')+fld('m-sl','Losses','number',s?s.losses:'')+'</div>'+
+  fld('m-sn','Notes','text',s?s.notes:'')+
+  '<div class="m-acts"><button class="btn btn-cancel" id="m-cancel">Cancel</button><button class="btn btn-save" id="m-save">Save</button></div>');
+ document.querySelectorAll('#sess-chips .sess-chip').forEach(function(c){
+  c.addEventListener('click',function(){
+   var aid=c.dataset.aid,i=picked.indexOf(aid);
+   if(i>=0){picked.splice(i,1);c.classList.remove('on');}else{picked.push(aid);c.classList.add('on');}
+  });});
+ document.getElementById('m-cancel').addEventListener('click',closeM);
+ document.getElementById('m-save').addEventListener('click',function(){
+  var rec={date:gv('m-sd'),accounts:picked.slice(),trades:parseInt(gv('m-st'))||0,losses:parseInt(gv('m-sl'))||0,notes:gv('m-sn')};
+  if(s){Object.keys(rec).forEach(function(k){s[k]=rec[k];});}else{rec._id=uid('s');db.sessions.push(rec);}
+  save();closeM();renderAll();});
+}
+function capitalAddMenu(){
+ openM('<div class="m-h">Add to capital</div>'+
+  '<div class="m-acts" style="flex-direction:column;gap:9px;margin-top:4px">'+
+  '<button class="btn btn-save" id="add-payout">Funded payout</button>'+
+  '<button class="btn btn-cancel" id="add-tx">Live transaction</button>'+
+  '<button class="btn btn-cancel" id="m-cancel">Cancel</button></div>');
+ document.getElementById('add-payout').addEventListener('click',function(){payoutModal();});
+ document.getElementById('add-tx').addEventListener('click',function(){txModal();});
+ document.getElementById('m-cancel').addEventListener('click',closeM);
+}
+
+/* ---- Export ---- */
+document.getElementById('exp-btn').addEventListener('click',function(){
+ if(typeof XLSX==='undefined'){alert('Excel library needs internet to load. Connect and reload the app, then export.');return;}
+ var wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(db.accounts.map(function(a){return{
+  'Register Date':a.registerDate,'Firm':a.firm,'Size':a.size,'Stage':a.stage,'Account ID':a.accountId,
+  'Date Started':a.dateStarted,'Date Completed':a.dateCompleted,'Fee £':a.fee,'Payout £':a.payout,
+  'Refund £':a.refund,'Status':a.status,'In Rotation':a.inRotation?'Yes':'No','Linked':a.linkedAcct,'Notes':a.notes};})),'Accounts');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(db.payouts.map(function(p){return{
+  'Date':p.date,'Funded Acct':p.accountId,'Size':p.size,'Gross £':p.gross,'To Live £':p.live,'To Pie £':p.pie,'To Personal £':p.personal,'Notes':p.notes};})),'Payouts');
+ var bal=0;var txRows=[];
+ db.payouts.slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(p){bal+=(+p.live||0);
+  txRows.push({'Date':p.date,'Type':'Payout Deposit','Amount £':p.live,'Ref':'80% of '+p.gross+' ('+p.accountId+')','Balance £':+bal.toFixed(2)});});
+ db.liveTx.slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(t){bal+=(+t.amount||0);
+  txRows.push({'Date':t.date,'Type':t.type,'Amount £':t.amount,'Ref':t.ref,'Balance £':+bal.toFixed(2)});});
+ txRows.sort(function(a,b){return a.Date<b.Date?-1:1;});
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(txRows),'Live Account');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(db.sessions.map(function(s){return{
+  'Date':s.date,'Accounts':(s.accounts||[]).join(' | '),'Trades':s.trades,'Losses':s.losses,'Notes':s.notes};})),'Sessions');
+ var mEl=document.querySelectorAll('#month-tbl .trow:not(.head)');var mRows=[];
+ mEl.forEach(function(r){var c=r.querySelectorAll('.tc');mRows.push({'Month':c[0].textContent,'Payouts £':c[1].textContent,'Fees £':c[2].textContent,'Net £':c[3].textContent,'Pass/Fail':c[4].textContent,'Sessions':c[5].textContent});});
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(mRows),'Monthly');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(db.pie.map(function(s){return{'Sleeve':s.sleeve,'Ticker':s.ticker,'%':s.pct,'Name':s.name};})),'Pie');
+ XLSX.writeFile(wb,'ATM_Tracker_Export_'+today()+'.xlsx');
+});
+
+function renderStats(){
+ var A=db.accounts, ev=A.filter(isEval), fd=A.filter(function(a){return !isEval(a);});
+ var fees=ev.reduce(function(s,a){return s+(+a.fee||0);},0);
+ var refunds=A.reduce(function(s,a){return s+(+a.refund||0);},0);
+ var pays=db.payouts.reduce(function(s,x){return s+(+x.gross||0);},0);
+ var personal=(db.settings.personalSpendOverride!=null?db.settings.personalSpendOverride:autoPersonalSpend());
+ var net=pays+refunds-fees;
+ // P1 passes only grant access to a P2 — they are NOT a completed challenge in the funding sense.
+ // P2 passes are what actually grant a funded account, so those count as "accounts passed".
+ var p1Passed=ev.filter(function(a){return a.status==='Passed' && a.stage==='Phase 1';}).length;
+ var p2Passed=ev.filter(function(a){return a.status==='Passed' && a.stage==='Phase 2';}).length;
+ var passed=p2Passed;   // "passed" (to funded) = Phase 2 passes only
+ var failed=ev.filter(function(a){return a.status==='Failed'||a.status==='Breached';}).length;
+ var fActive=fd.filter(function(a){return a.status==='Funded Active' && a.rotState!=='Final swing';});
+ var costPerFunded=fd.length? fees/fd.length : 0;
+ var payPerFunded=fd.length? pays/fd.length : 0;
+ var toBreakeven=Math.max(0,fees-(pays+refunds));
+ // avg challenge duration (days) where both dates exist
+ var durs=ev.filter(function(a){return a.dateStarted&&a.dateCompleted;}).map(function(a){
+   return (new Date(a.dateCompleted)-new Date(a.dateStarted))/86400000;}).filter(function(d){return d>=0;});
+ var avgDur=durs.length? durs.reduce(function(s,d){return s+d;},0)/durs.length : null;
+ var totalSpend=fees;                       // all challenge fees = total business cost to date
+ var surplus=(pays+refunds)-totalSpend;     // >0 means past breakeven
+ var beStat = surplus>=0
+   ? stat('Past break even',money(surplus),'net surplus','pos')
+   : stat('To break even',money(-surplus),'revenue needed','amb');
+ // Director's loan ledger + withdrawals from the live account
+ var loanIn=db.liveTx.filter(function(t){return t.dirLoan==='in';}).reduce(function(s,t){return s+Math.abs(+t.amount||0);},0);
+ // Money that repays YOU = loan repayments + withdrawals (excl. business costs) + 10% pie split.
+ var repayTx=db.liveTx.filter(function(t){return (t.dirLoan==='repay'||t.type==='Withdrawal') && !t.bizCost;}).reduce(function(s,t){return s+Math.abs(+t.amount||0);},0);
+ // 10% PERSONAL split goes to you (repays loan); 10% pie is business investment (does NOT).
+ var personalSplit=db.payouts.reduce(function(s,p){return s+(+p.personal||0);},0);
+ var returned=repayTx+personalSplit;
+ var bizCosts=db.liveTx.filter(function(t){return t.bizCost;}).reduce(function(s,t){return s+Math.abs(+t.amount||0);},0);
+ // Kickstart (challenge fees paid from personal pocket) is ALSO a director's loan owed back to you.
+ var totalPersonalIn=personal+loanIn;              // everything personal put in
+ var loanOwed=Math.max(0,totalPersonalIn-returned);// still owed (floored at 0)
+ var profitTaken=Math.max(0,returned-totalPersonalIn); // beyond the loan = real profit
+ var loanRepaid=Math.min(returned,totalPersonalIn);    // portion that repaid the loan
+ document.getElementById('bstats-grid').innerHTML=
+  stat('Personal in',money(totalPersonalIn),'kickstart + loans (all owed)')+
+  stat('Total spend',money(totalSpend),'all challenge fees',totalSpend>0?'neg':'')+
+  stat('Total revenue',money(pays+refunds),'payouts + refunds','pos')+
+  stat('Net position',money(net),'revenue \u2212 spend',net>=0?'pos':'neg')+
+  beStat+
+  stat('Repaid to you',money(loanRepaid),'withdrawals + personal split','pos')+
+  stat('Loan owed to you',money(loanOwed),loanOwed>0?'incl. kickstart':'fully repaid',loanOwed>0?'amb':'pos')+
+  stat('Business costs',money(bizCosts),'operating expenses',bizCosts>0?'neg':'')+
+  stat('Profit taken',money(profitTaken),profitTaken>0?'beyond loan repaid':'\u2014 loan not yet cleared',profitTaken>0?'pos':'')+
+  stat('Cost / funded acct',money(costPerFunded),'fees \u00f7 fundeds')+
+  stat('Payout / funded acct',money(payPerFunded),'','pos');
+ var inFlight=ev.filter(function(a){return a.status==='Active';}).length;
+ var totalRefund=A.reduce(function(s,a){return s+(+a.refund||0);},0);
+ // Expected cost to produce ONE funded account = total fees / funded produced (accounts that reached Funded).
+ var fundedProduced=fd.length;
+ var expCostPerFunded=fundedProduced? fees/fundedProduced : null;
+ // Pass rate implied cost: at observed pass rate, expected fee to clear a phase = fee / passRate
+ var pr=(passed+failed)?passed/(passed+failed):null;
+ var avgFee=ev.filter(isChallengeStart).length? fees/ev.filter(isChallengeStart).length : 0;
+ var impliedCostToPass=(pr&&pr>0)? avgFee/pr : null;
+ document.getElementById('cstats-grid').innerHTML=
+  stat('Pass rate',(passed+failed)?pct(passed/(passed+failed)):'\u2014',passed+' P2 / '+(passed+failed)+' completed','amb')+
+  stat('Phase 1 passes',p1Passed,'\u2192 unlocked a P2')+
+  stat('In flight',inFlight,'challenges live now')+
+  stat('Avg challenge time',avgDur!=null?Math.round(avgDur)+' days':'\u2014','start \u2192 complete')+
+  stat('Funded produced',fundedProduced,'reached funded','pos')+
+  stat('Cost / funded',expCostPerFunded!=null?money(expCostPerFunded):'\u2014','fees \u00f7 funded')+
+  stat('Implied cost to pass',impliedCostToPass!=null?money(impliedCostToPass):'\u2014','avg fee \u00f7 pass rate')+
+  stat('Fee burn',money(fees),'lifetime challenge spend','neg')+
+  stat('Refunds recovered',money(totalRefund),'back from firms',totalRefund>0?'pos':'');
+ // by firm
+ var rows='<div class="trow head"><div class="tc l">Firm</div><div class="tc">Chal</div><div class="tc">Pass%</div><div class="tc">Fund</div><div class="tc">Pay \u00a3</div></div>';
+ ['FundingPips','Aqua Funded'].forEach(function(f){
+  var e=ev.filter(function(a){return (a.firm||'FundingPips')===f;});
+  var fnd=fd.filter(function(a){return (a.firm||'FundingPips')===f;});
+  if(!e.length&&!fnd.length)return;
+  var pp=e.filter(function(a){return a.status==='Passed';}).length;
+  var ff=e.filter(function(a){return a.status==='Failed'||a.status==='Breached';}).length;
+  var pay=db.payouts.filter(function(x){return (x.firm||'FundingPips')===f;}).reduce(function(s,x){return s+(+x.gross||0);},0);
+  rows+='<div class="trow"><div class="tc l">'+f.replace('Funding','FP').replace(' Funded',' Aqua')+'</div><div class="tc">'+e.length+'</div><div class="tc">'+((pp+ff)?pct(pp/(pp+ff)):'\u2014')+'</div><div class="tc">'+fnd.length+'</div><div class="tc pos">'+Math.round(pay)+'</div></div>';
+ });
+ document.getElementById('firm-tbl').innerHTML=rows;
+ // ── Verdict: interpret the business economics, don't just show them ──
+ (function(){
+  var host=document.getElementById('bstats-verdict'); if(!host) return;
+  var lines=[];
+  function L(sev,ico,html){lines.push('<div class="vd-line '+sev+'"><span class="vd-ico">'+ico+'</span>'+html+'</div>');}
+  var surplus=(pays+refunds)-fees;
+  var passRate=(passed+failed)?passed/(passed+failed):null;
+  // 1. Break-even standing
+  if(surplus>=0) L('good','\u2713','<b>Past break even by '+money(surplus)+'.</b> The challenge programme has returned more than it has cost \u2014 fees are no longer a drag on the business.');
+  else L('warn','\u25B3','<b>'+money(-surplus)+' to break even.</b> Revenue still needed to cover '+money(fees)+' in fees; each payout closes the gap.');
+  // 2. Pass rate vs economics
+  if(passRate!=null){
+    if(passRate>=0.4) L('good','\u2713','<b>Pass rate '+pct(passRate)+'.</b> Healthy \u2014 funded accounts are produced efficiently relative to fee spend.');
+    else if(passRate>=0.2) L('warn','\u25B3','<b>Pass rate '+pct(passRate)+'.</b> Workable but fee-heavy \u2014 most spend is on challenges that don\u2019t convert. Watch cost per funded ('+money(costPerFunded)+').');
+    else L('bad','\u2715','<b>Pass rate '+pct(passRate)+'.</b> Low \u2014 fee burn is outpacing conversion. Until this lifts, the business leans on the few funded accounts that clear.');
+  }
+  // 3. Payout vs cost efficiency
+  if(fees>0){
+    var ratio=pays/fees;
+    if(ratio>=1.5) L('good','\u2713','<b>Payouts '+ratio.toFixed(1)+'\u00d7 fees.</b> The funded book is carrying the programme well.');
+    else if(ratio>=0.8) L('warn','\u25B3','<b>Payouts '+ratio.toFixed(1)+'\u00d7 fees.</b> Self-sustaining but not yet a net engine.');
+    else L('bad','\u2715','<b>Payouts '+ratio.toFixed(1)+'\u00d7 fees.</b> Still fee-dominated \u2014 funded accounts need more payout cycles to turn the corner.');
+  }
+  host.innerHTML=lines.join('');
+ })();
+ renderMonthly();
+}
+// ── Lightweight inline-SVG charting (no deps) ──────────────────────────────
+var CSS_GREEN='#30D158', CSS_AMBER='#FFB020', CSS_BLUE='#0A84FF', CSS_RED='#FF453A', CSS_GRID='rgba(255,255,255,0.07)', CSS_TXT='rgba(255,255,255,0.5)';
+function svgEl(w,h){return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" style="display:block">';}
+function niceMax(v){ if(v<=0)return 100; var p=Math.pow(10,Math.floor(Math.log10(v))); var n=v/p; var m=n<=1?1:n<=2?2:n<=5?5:10; return m*p; }
+function fmtMoneyShort(v){ v=Math.round(v); if(Math.abs(v)>=1000) return '\u00a3'+(v/1000).toFixed(v%1000?1:0)+'k'; return '\u00a3'+v; }
+// Line/area chart with optional point markers. series=[{name,color,pts:[{x(ms),y}]}], markers=[{x,label,color}]
+function lineChart(host, series, opts){
+  opts=opts||{};
+  var el=document.getElementById(host); if(!el) return;
+  var allPts=[]; series.forEach(function(s){allPts=allPts.concat(s.pts);});
+  if(allPts.length===0){ el.innerHTML='<div class="chart-empty">No entries yet.</div>'; return; }
+  var W=340,H=170, pad={l:44,r:10,t:10,b:22};
+  var xs=allPts.map(function(p){return p.x;}), ys=allPts.map(function(p){return p.y;});
+  var xmin=Math.min.apply(null,xs), xmax=Math.max.apply(null,xs);
+  var ymin=Math.min(0,Math.min.apply(null,ys)), ymax=niceMax(Math.max.apply(null,ys));
+  if(xmax===xmin){xmin=xmin-86400000;xmax=xmax+86400000;}   // single point: give it a day of span
+  function X(x){return pad.l+(x-xmin)/(xmax-xmin)*(W-pad.l-pad.r);}
+  function Y(y){return H-pad.b-(y-ymin)/(ymax-ymin)*(H-pad.t-pad.b);}
+  var svg=svgEl(W,H);
+  // horizontal gridlines + y labels (4)
+  for(var g=0;g<=4;g++){ var yv=ymin+(ymax-ymin)*g/4; var yy=Y(yv);
+    svg+='<line x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'" stroke="'+CSS_GRID+'" stroke-width="1"/>';
+    svg+='<text x="'+(pad.l-6)+'" y="'+(yy+3)+'" text-anchor="end" font-size="9" fill="'+CSS_TXT+'">'+fmtMoneyShort(yv)+'</text>';
+  }
+  // x end labels (dates)
+  function dlabel(ms){var d=new Date(ms);return (d.getMonth()+1)+'/'+String(d.getFullYear()).slice(2);}
+  svg+='<text x="'+pad.l+'" y="'+(H-6)+'" text-anchor="start" font-size="9" fill="'+CSS_TXT+'">'+dlabel(xmin)+'</text>';
+  svg+='<text x="'+(W-pad.r)+'" y="'+(H-6)+'" text-anchor="end" font-size="9" fill="'+CSS_TXT+'">'+dlabel(xmax)+'</text>';
+  // markers (vertical lines)
+  (opts.markers||[]).forEach(function(m){ var mx=X(m.x);
+    svg+='<line x1="'+mx+'" y1="'+pad.t+'" x2="'+mx+'" y2="'+(H-pad.b)+'" stroke="'+(m.color||CSS_AMBER)+'" stroke-width="1" stroke-dasharray="2,3" opacity="0.7"/>';
+    svg+='<circle cx="'+mx+'" cy="'+pad.t+'" r="2.5" fill="'+(m.color||CSS_AMBER)+'"/>';
+  });
+  // series: area + line
+  series.forEach(function(s,si){
+    var pts=s.pts.slice().sort(function(a,b){return a.x-b.x;});
+    if(!pts.length) return;
+    var d=pts.map(function(p,i){return (i?'L':'M')+X(p.x).toFixed(1)+' '+Y(p.y).toFixed(1);}).join(' ');
+    // Area: on all series if opts.area & not primaryArea; only on series 0 if primaryArea.
+    var wantArea = opts.area && pts.length>1 && (!opts.primaryArea || si===0);
+    if(wantArea){ var area=d+' L'+X(pts[pts.length-1].x).toFixed(1)+' '+Y(ymin)+' L'+X(pts[0].x).toFixed(1)+' '+Y(ymin)+' Z';
+      svg+='<path d="'+area+'" fill="'+s.color+'" opacity="0.12"/>'; }
+    var sw = s.thin ? 1.3 : 2;
+    var dash = s.thin ? ' stroke-dasharray="4,3"' : '';
+    svg+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="'+sw+'" stroke-linejoin="round"'+dash+' opacity="'+(s.thin?0.85:1)+'"/>';
+    var lp=pts[pts.length-1]; svg+='<circle cx="'+X(lp.x)+'" cy="'+Y(lp.y)+'" r="'+(s.thin?2:3)+'" fill="'+s.color+'"/>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+// Grouped bar chart. cats=[label], series=[{name,color,vals:[]}]
+function barChart(host, cats, series, opts){
+  opts=opts||{};
+  var el=document.getElementById(host); if(!el) return;
+  if(!cats.length){ el.innerHTML='<div class="chart-empty">No data yet.</div>'; return; }
+  var W=340,H=160, pad={l:40,r:10,t:10,b:26};
+  var allv=[]; series.forEach(function(s){allv=allv.concat(s.vals);});
+  var ymax=niceMax(Math.max.apply(null,allv.concat([1])));
+  var groups=cats.length, gW=(W-pad.l-pad.r)/groups, bW=gW/(series.length+0.5)/1.2;
+  function Y(y){return H-pad.b-(y/ymax)*(H-pad.t-pad.b);}
+  var svg=svgEl(W,H);
+  for(var g=0;g<=3;g++){var yv=ymax*g/3;var yy=Y(yv);
+    svg+='<line x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'" stroke="'+CSS_GRID+'" stroke-width="1"/>';
+    svg+='<text x="'+(pad.l-5)+'" y="'+(yy+3)+'" text-anchor="end" font-size="9" fill="'+CSS_TXT+'">'+fmtMoneyShort(yv)+'</text>';}
+  cats.forEach(function(c,ci){
+    var gx=pad.l+ci*gW+gW*0.15;
+    series.forEach(function(s,si){
+      var v=s.vals[ci]||0; var x=gx+si*bW; var y=Y(v); var h=(H-pad.b)-y;
+      svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bW.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="2" fill="'+s.color+'"/>';
+    });
+    svg+='<text x="'+(pad.l+ci*gW+gW/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="'+CSS_TXT+'">'+c+'</text>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+function legend(host, items){ var el=document.getElementById(host); if(!el)return;
+  el.innerHTML=items.map(function(i){return '<span class="leg-item"><span class="leg-dot" style="background:'+i.color+'"></span>'+i.label+'</span>';}).join(''); }
+
+function renderCharts(){
+  // 1. Live account balance TRAJECTORY over time. Single source of truth per flow:
+  //    - payout .live legs  → injections (up, amber marker)
+  //    - liveTx 'Trade P&L' → trading result (signed)
+  //    - liveTx 'Withdrawal'/'Challenge Purchase' → out (down, red marker)
+  //    - liveTx 'Direct Deposit' → in (up)
+  //    We MERGE these chronologically into a running balance so the curve reflects the
+  //    real progression, not the current snapshot. Injections are taken from payouts only,
+  //    so a matching liveTx (if any) is not double-counted.
+  var events=[];
+  db.payouts.forEach(function(p){ if(p.date && (+p.live||0)!==0) events.push({x:new Date(p.date).getTime(), amt:(+p.live||0), kind:'inj'}); });
+  db.liveTx.forEach(function(t){
+    if(!t.date) return;
+    var amt=(+t.amount||0); if(amt===0) return;
+    var kind = t.type==='Trade P&L' ? 'pnl'
+             : (t.type==='Withdrawal'||t.type==='Challenge Purchase') ? 'out'
+             : t.type==='Direct Deposit' ? 'dep'
+             : 'other';
+    events.push({x:new Date(t.date).getTime(), amt:amt, kind:kind});
+  });
+  events.sort(function(a,b){return a.x-b.x || 0;});
+  var run=0, pts=[], markers=[];
+  events.forEach(function(e){
+    run+=e.amt; pts.push({x:e.x,y:run});
+    if(e.kind==='inj') markers.push({x:e.x,color:CSS_AMBER});
+    else if(e.kind==='out') markers.push({x:e.x,color:CSS_RED});
+  });
+  // Seed a starting point at 0 so a single event still draws a segment (no min-data gate).
+  if(pts.length===1){ pts.unshift({x:pts[0].x-86400000, y:0}); }
+  lineChart('chart-balance', [{name:'Balance',color:CSS_GREEN,pts:pts}], {area:true, markers:markers});
+  legend('chart-balance-leg', [{color:CSS_GREEN,label:'Balance'},{color:CSS_AMBER,label:'Injection'},{color:CSS_RED,label:'Withdrawal'}]);
+
+  // 2. Cumulative payouts: PRIMARY line = total (all firms), SECONDARY = per firm.
+  var allPay=db.payouts.filter(function(p){return p.date;}).slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  var totRun=0; var totPts=allPay.map(function(p){totRun+=(+p.gross||0);return {x:new Date(p.date).getTime(),y:totRun};});
+  var firms=['FundingPips','Aqua Funded']; var fcolors={'FundingPips':CSS_BLUE,'Aqua Funded':CSS_AMBER};
+  var perFirm=firms.map(function(f){
+    var ps=allPay.filter(function(p){return (p.firm||'FundingPips')===f;});
+    var run=0, pts=ps.map(function(p){run+=(+p.gross||0);return {x:new Date(p.date).getTime(),y:run};});
+    return {name:f,color:fcolors[f],pts:pts,thin:true};
+  }).filter(function(s){return s.pts.length>0;});
+  // Total is the hero (green, thick, area); per-firm are thin comparison lines.
+  var payChartSeries=[{name:'Total',color:CSS_GREEN,pts:totPts}].concat(perFirm);
+  if(totPts.length){
+    lineChart('chart-payouts', payChartSeries, {area:true, primaryArea:true});
+    var leg=[{color:CSS_GREEN,label:'Total'}].concat(perFirm.map(function(s){return {color:s.color,label:s.name.replace('FundingPips','FP').replace('Aqua Funded','Aqua')};}));
+    legend('chart-payouts-leg', leg);
+  } else { document.getElementById('chart-payouts').innerHTML='<div class="chart-empty">No payouts logged yet.</div>'; document.getElementById('chart-payouts-leg').innerHTML=''; }
+
+  // 3. Challenge funnel: cumulative started / passed / funded by month
+  var evs=db.accounts.filter(isEval);
+  var months={};
+  function mk(d){return d?d.slice(0,7):null;}
+  evs.forEach(function(a){ var m=mk(a.registerDate||a.dateStarted); if(m){months[m]=months[m]||{s:0,p:0,f:0}; months[m].s++; if(a.status==='Passed')months[m].p++;} });
+  db.accounts.filter(function(a){return !isEval(a);}).forEach(function(a){ var m=mk(a.registerDate||a.dateStarted); if(m){months[m]=months[m]||{s:0,p:0,f:0}; months[m].f++;} });
+  var mkeys=Object.keys(months).sort();
+  if(mkeys.length){
+    var cs=0,cp=0,cf=0;
+    var startPts=[],passPts=[],fundPts=[];
+    mkeys.forEach(function(m){var t=new Date(m+'-01').getTime(); cs+=months[m].s;cp+=months[m].p;cf+=months[m].f;
+      startPts.push({x:t,y:cs});passPts.push({x:t,y:cp});fundPts.push({x:t,y:cf});});
+    // reuse lineChart but with integer y — force money formatter off by using count-friendly labels
+    lineChartCount('chart-funnel',[{name:'Started',color:CSS_TXT,pts:startPts},{name:'Passed',color:CSS_AMBER,pts:passPts},{name:'Funded',color:CSS_GREEN,pts:fundPts}]);
+    legend('chart-funnel-leg',[{color:CSS_TXT,label:'Started'},{color:CSS_AMBER,label:'Passed'},{color:CSS_GREEN,label:'Funded'}]);
+  } else { document.getElementById('chart-funnel').innerHTML='<div class="chart-empty">No challenges logged yet.</div>'; document.getElementById('chart-funnel-leg').innerHTML=''; }
+}
+// count-axis variant (integer labels, no £)
+function lineChartCount(host, series){
+  var el=document.getElementById(host); if(!el) return;
+  var allPts=[]; series.forEach(function(s){allPts=allPts.concat(s.pts);});
+  if(allPts.length===0){ el.innerHTML='<div class="chart-empty">No entries yet.</div>'; return; }
+  var W=340,H=160, pad={l:30,r:10,t:10,b:22};
+  var xs=allPts.map(function(p){return p.x;}),ys=allPts.map(function(p){return p.y;});
+  var xmin=Math.min.apply(null,xs),xmax=Math.max.apply(null,xs);
+  var ymax=Math.max(4,Math.ceil(Math.max.apply(null,ys)));
+  if(xmax===xmin){xmin=xmin-86400000;xmax=xmax+86400000;}
+  function X(x){return pad.l+(x-xmin)/(xmax-xmin)*(W-pad.l-pad.r);}
+  function Y(y){return H-pad.b-(y/ymax)*(H-pad.t-pad.b);}
+  var svg=svgEl(W,H);
+  for(var g=0;g<=4;g++){var yv=Math.round(ymax*g/4);var yy=Y(yv);
+    svg+='<line x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'" stroke="'+CSS_GRID+'"/>';
+    svg+='<text x="'+(pad.l-5)+'" y="'+(yy+3)+'" text-anchor="end" font-size="9" fill="'+CSS_TXT+'">'+yv+'</text>';}
+  function dl(ms){var d=new Date(ms);return (d.getMonth()+1)+'/'+String(d.getFullYear()).slice(2);}
+  svg+='<text x="'+pad.l+'" y="'+(H-6)+'" font-size="9" fill="'+CSS_TXT+'">'+dl(xmin)+'</text>';
+  svg+='<text x="'+(W-pad.r)+'" y="'+(H-6)+'" text-anchor="end" font-size="9" fill="'+CSS_TXT+'">'+dl(xmax)+'</text>';
+  series.forEach(function(s){var pts=s.pts.slice().sort(function(a,b){return a.x-b.x;});
+    var d=pts.map(function(p,i){return (i?'L':'M')+X(p.x).toFixed(1)+' '+Y(p.y).toFixed(1);}).join(' ');
+    svg+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round"/>';
+    var lp=pts[pts.length-1];svg+='<circle cx="'+X(lp.x)+'" cy="'+Y(lp.y)+'" r="3" fill="'+s.color+'"/>';});
+  svg+='</svg>'; el.innerHTML=svg;
+}
+function renderAll(){renderProp();renderAccounts();renderRotation();renderCapital();renderSessions();renderDailyLog();renderLogTrends();renderStats();renderCharts();}
+renderAll();nav('prop');
+</script>
+</body>
+</html>
